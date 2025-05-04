@@ -20,6 +20,7 @@ import (
 type AuthHandler interface {
 	Register(res http.ResponseWriter, req *http.Request)
 	Login(res http.ResponseWriter, req *http.Request)
+	Logout(res http.ResponseWriter, req *http.Request)
 }
 
 type auth struct {
@@ -163,4 +164,22 @@ func (a auth) Login(res http.ResponseWriter, req *http.Request) {
 	}
 
 	logger.Info().Int("status_code", http.StatusOK).Msg("successfully authenticated user")
+}
+
+func (a auth) Logout(res http.ResponseWriter, req *http.Request) {
+	ctx := req.Context()
+	logger := log.With().Ctx(ctx).Logger()
+
+	http.SetCookie(res, &http.Cookie{
+		Name:     "access_token",
+		Value:    "",
+		Domain:   a.configs.Env.CookieDomain,
+		MaxAge:   0,
+		SameSite: http.SameSiteNoneMode,
+		HttpOnly: true,
+		Secure:   true,
+	})
+
+	res.WriteHeader(http.StatusNoContent)
+	logger.Info().Int("status_code", http.StatusNoContent).Msg("successfully logout")
 }
