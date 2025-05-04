@@ -37,7 +37,7 @@ func NewAuthHandler(configs configs.Configs, service services.AuthServicer) Auth
 
 func (a auth) Register(res http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
-	logger := log.With().Ctx(ctx).Logger()
+	logger := log.Ctx(ctx).With().Logger()
 
 	var reqBody dtos.RegisterRequest
 	if err := httputil.DecodeAndValidate(req, a.configs.Validate, &reqBody); err != nil {
@@ -89,7 +89,7 @@ func (a auth) Register(res http.ResponseWriter, req *http.Request) {
 
 func (a auth) Login(res http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
-	logger := log.With().Ctx(ctx).Logger()
+	logger := log.Ctx(ctx).With().Logger()
 
 	var reqBody dtos.LoginRequest
 	if err := httputil.DecodeAndValidate(req, a.configs.Validate, &reqBody); err != nil {
@@ -168,7 +168,7 @@ func (a auth) Login(res http.ResponseWriter, req *http.Request) {
 
 func (a auth) Logout(res http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
-	logger := log.With().Ctx(ctx).Logger()
+	logger := log.Ctx(ctx).With().Logger()
 
 	http.SetCookie(res, &http.Cookie{
 		Name:     "access_token",

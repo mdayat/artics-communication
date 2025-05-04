@@ -12,11 +12,12 @@ import (
 	"github.com/mdayat/artics-communication/go/internal/services"
 )
 
-func NewRestHandler(configs configs.Configs) *chi.Mux {
+func NewRestHandler(configs configs.Configs, customMiddleware MiddlewareHandler) *chi.Mux {
 	router := chi.NewRouter()
 
 	router.Use(chiMiddleware.CleanPath)
 	router.Use(chiMiddleware.RealIP)
+	router.Use(customMiddleware.Logger)
 	router.Use(chiMiddleware.Recoverer)
 	router.Use(httprate.LimitByIP(100, 1*time.Minute))
 
@@ -36,6 +37,13 @@ func NewRestHandler(configs configs.Configs) *chi.Mux {
 	router.Post("/auth/register", authHandler.Register)
 	router.Post("/auth/login", authHandler.Login)
 	router.Post("/auth/logout", authHandler.Logout)
+
+	router.Group(func(r chi.Router) {
+		r.Use(customMiddleware.Authenticate)
+
+		userHandler := NewUserHandler(configs)
+		r.Get("/users/me", userHandler.GetUser)
+	})
 
 	return router
 }

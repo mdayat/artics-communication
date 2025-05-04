@@ -8,6 +8,7 @@ import (
 
 	"github.com/mdayat/artics-communication/go/configs"
 	"github.com/mdayat/artics-communication/go/internal/handlers"
+	"github.com/mdayat/artics-communication/go/internal/services"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -32,8 +33,12 @@ func main() {
 	defer db.Conn.Close()
 
 	configs := configs.NewConfigs(env, db)
-	router := handlers.NewRestHandler(configs)
+	authService := services.NewAuthService(configs)
 
+	authenticator := handlers.NewProdAuthenticator(authService)
+	customMiddleware := handlers.NewMiddlewareHandler(configs, authenticator)
+
+	router := handlers.NewRestHandler(configs, customMiddleware)
 	if err := http.ListenAndServe(":8080", router); err != nil {
 		logger.Fatal().Err(err).Send()
 	}
