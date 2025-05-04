@@ -8,6 +8,29 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type MeetingRoom struct {
+	ID        pgtype.UUID        `json:"id"`
+	Name      string             `json:"name"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+type Reservation struct {
+	ID            pgtype.UUID        `json:"id"`
+	UserID        pgtype.UUID        `json:"user_id"`
+	MeetingRoomID pgtype.UUID        `json:"meeting_room_id"`
+	TimeSlotID    pgtype.UUID        `json:"time_slot_id"`
+	Status        string             `json:"status"`
+	ReservedAt    pgtype.Timestamptz `json:"reserved_at"`
+}
+
+type TimeSlot struct {
+	ID            pgtype.UUID        `json:"id"`
+	MeetingRoomID pgtype.UUID        `json:"meeting_room_id"`
+	StartDate     pgtype.Timestamptz `json:"start_date"`
+	EndDate       pgtype.Timestamptz `json:"end_date"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
 type User struct {
 	ID        pgtype.UUID        `json:"id"`
 	Email     string             `json:"email"`
