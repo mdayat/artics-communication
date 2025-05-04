@@ -11,6 +11,39 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const insertUser = `-- name: InsertUser :one
+INSERT INTO "user" (id, email, password, name, role)
+VALUES ($1, $2, $3, $4, $5) RETURNING id, email, password, name, role, created_at
+`
+
+type InsertUserParams struct {
+	ID       pgtype.UUID `json:"id"`
+	Email    string      `json:"email"`
+	Password string      `json:"password"`
+	Name     string      `json:"name"`
+	Role     string      `json:"role"`
+}
+
+func (q *Queries) InsertUser(ctx context.Context, arg InsertUserParams) (User, error) {
+	row := q.db.QueryRow(ctx, insertUser,
+		arg.ID,
+		arg.Email,
+		arg.Password,
+		arg.Name,
+		arg.Role,
+	)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Password,
+		&i.Name,
+		&i.Role,
+		&i.CreatedAt,
+	)
+	return i, err
+}
+
 const selectUser = `-- name: SelectUser :one
 SELECT id, email, password, name, role, created_at FROM "user" WHERE id = $1
 `

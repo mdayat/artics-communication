@@ -9,6 +9,7 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/go-chi/httprate"
 	"github.com/mdayat/artics-communication/go/configs"
+	"github.com/mdayat/artics-communication/go/internal/services"
 )
 
 func NewRestHandler(configs configs.Configs) *chi.Mux {
@@ -29,6 +30,10 @@ func NewRestHandler(configs configs.Configs) *chi.Mux {
 	}
 	router.Use(cors.Handler(options))
 	router.Use(chiMiddleware.Heartbeat("/ping"))
+
+	authService := services.NewAuthService(configs)
+	authHandler := NewAuthHandler(configs, authService)
+	router.Post("/auth/register", authHandler.Register)
 
 	return router
 }
