@@ -6,7 +6,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/mdayat/artics-communication/go/configs"
 	"github.com/mdayat/artics-communication/go/internal/dtos"
@@ -17,6 +19,7 @@ import (
 
 type AuthHandler interface {
 	Register(res http.ResponseWriter, req *http.Request)
+	Login(res http.ResponseWriter, req *http.Request)
 }
 
 type auth struct {
@@ -42,7 +45,7 @@ func (a auth) Register(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	result, err := a.service.RegisterUser(ctx, services.RegisterUserParams{
+	user, err := a.service.RegisterUser(ctx, services.RegisterUserParams{
 		Username: reqBody.Username,
 		Email:    reqBody.Email,
 		Password: reqBody.Password,
@@ -61,11 +64,11 @@ func (a auth) Register(res http.ResponseWriter, req *http.Request) {
 	}
 
 	resBody := dtos.UserResponse{
-		Id:        result.ID.String(),
-		Email:     result.Email,
-		Name:      result.Name,
-		Role:      result.Role,
-		CreatedAt: result.CreatedAt.Time.Format(time.RFC3339),
+		Id:        user.ID.String(),
+		Email:     user.Email,
+		Name:      user.Name,
+		Role:      user.Role,
+		CreatedAt: user.CreatedAt.Time.Format(time.RFC3339),
 	}
 
 	params := httputil.SendSuccessResponseParams{
@@ -81,4 +84,83 @@ func (a auth) Register(res http.ResponseWriter, req *http.Request) {
 	}
 
 	logger.Info().Int("status_code", http.StatusCreated).Msg("successfully registered user")
+}
+
+func (a auth) Login(res http.ResponseWriter, req *http.Request) {
+	ctx := req.Context()
+	logger := log.With().Ctx(ctx).Logger()
+
+	var reqBody dtos.LoginRequest
+	if err := httputil.DecodeAndValidate(req, a.configs.Validate, &reqBody); err != nil {
+		logger.Error().Err(err).Caller().Int("status_code", http.StatusBadRequest).Msg("invalid request body")
+		http.Error(res, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	user, err := a.service.AuthenticateUser(ctx, services.AuthenticateUserParams{
+		Email:    reqBody.Email,
+		Password: reqBody.Password,
+	})
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			logger.Error().Err(err).Caller().Int("status_code", http.StatusNotFound).Msg("user not found")
+			http.Error(res, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		} else {
+			logger.Error().Err(err).Caller().Int("status_code", http.StatusInternalServerError).Msg("failed to select user")
+			http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	now := time.Now()
+	oneMonth := time.Hour * 24 * 30
+
+	accessTokenClaims := services.AccessTokenClaims{
+		Role: user.Role,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(now.Add(oneMonth)),
+			IssuedAt:  jwt.NewNumericDate(now),
+			Issuer:    a.configs.Env.OriginURL,
+			Subject:   user.ID.String(),
+		},
+	}
+
+	accessToken, err := a.service.CreateAccessToken(accessTokenClaims)
+	if err != nil {
+		logger.Error().Err(err).Caller().Int("status_code", http.StatusInternalServerError).Msg("failed to create access token")
+		http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	http.SetCookie(res, &http.Cookie{
+		Name:     "access_token",
+		Value:    accessToken,
+		Domain:   a.configs.Env.CookieDomain,
+		MaxAge:   int(oneMonth.Seconds()),
+		SameSite: http.SameSiteNoneMode,
+		HttpOnly: true,
+		Secure:   true,
+	})
+
+	resBody := dtos.UserResponse{
+		Id:        user.ID.String(),
+		Email:     user.Email,
+		Name:      user.Name,
+		Role:      user.Role,
+		CreatedAt: user.CreatedAt.Time.Format(time.RFC3339),
+	}
+
+	params := httputil.SendSuccessResponseParams{
+		StatusCode: http.StatusOK,
+		ResBody:    resBody,
+	}
+
+	if err := httputil.SendSuccessResponse(res, params); err != nil {
+		logger.Error().Err(err).Caller().Int("status_code", http.StatusInternalServerError).Msg("failed to send success response")
+		http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	logger.Info().Int("status_code", http.StatusOK).Msg("successfully authenticated user")
 }

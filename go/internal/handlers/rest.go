@@ -34,6 +34,7 @@ func NewRestHandler(configs configs.Configs) *chi.Mux {
 	authService := services.NewAuthService(configs)
 	authHandler := NewAuthHandler(configs, authService)
 	router.Post("/auth/register", authHandler.Register)
+	router.Post("/auth/login", authHandler.Login)
 
 	return router
 }

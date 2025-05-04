@@ -61,3 +61,21 @@ func (q *Queries) SelectUser(ctx context.Context, id pgtype.UUID) (User, error) 
 	)
 	return i, err
 }
+
+const selectUserByEmail = `-- name: SelectUserByEmail :one
+SELECT id, email, password, name, role, created_at FROM "user" WHERE email = $1
+`
+
+func (q *Queries) SelectUserByEmail(ctx context.Context, email string) (User, error) {
+	row := q.db.QueryRow(ctx, selectUserByEmail, email)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Password,
+		&i.Name,
+		&i.Role,
+		&i.CreatedAt,
+	)
+	return i, err
+}

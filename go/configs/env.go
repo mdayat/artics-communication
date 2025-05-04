@@ -11,6 +11,7 @@ type Env struct {
 	AllowedOrigins string
 	SecretKey      string
 	OriginURL      string
+	CookieDomain   string
 }
 
 func LoadEnv(filenames ...string) (Env, error) {
@@ -23,6 +24,7 @@ func LoadEnv(filenames ...string) (Env, error) {
 		AllowedOrigins: os.Getenv("ALLOWED_ORIGINS"),
 		SecretKey:      os.Getenv("SECRET_KEY"),
 		OriginURL:      os.Getenv("ORIGIN_URL"),
+		CookieDomain:   os.Getenv("COOKIE_DOMAIN"),
 	}
 
 	return env, nil
