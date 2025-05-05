@@ -16,6 +16,14 @@ build: vet
 run:
 	go run main.go
 
+seed:
+	docker compose up -d db
+	@until docker exec db pg_isready -U postgres; do \
+		sleep 1; \
+	done
+	atlas migrate apply --env prod -u "postgres://postgres:password@localhost:5432/postgres?search_path=public&sslmode=disable" --revisions-schema public
+	go run cmd/seed/main.go
+
 govulncheck:
 	govulncheck ./...
 

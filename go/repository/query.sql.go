@@ -11,6 +11,35 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type BulkInsertMeetingRoomParams struct {
+	ID   pgtype.UUID `json:"id"`
+	Name string      `json:"name"`
+}
+
+type BulkInsertReservationParams struct {
+	ID            pgtype.UUID        `json:"id"`
+	UserID        pgtype.UUID        `json:"user_id"`
+	MeetingRoomID pgtype.UUID        `json:"meeting_room_id"`
+	TimeSlotID    pgtype.UUID        `json:"time_slot_id"`
+	Canceled      bool               `json:"canceled"`
+	CanceledAt    pgtype.Timestamptz `json:"canceled_at"`
+}
+
+type BulkInsertTimeSlotParams struct {
+	ID            pgtype.UUID        `json:"id"`
+	MeetingRoomID pgtype.UUID        `json:"meeting_room_id"`
+	StartDate     pgtype.Timestamptz `json:"start_date"`
+	EndDate       pgtype.Timestamptz `json:"end_date"`
+}
+
+type BulkInsertUserParams struct {
+	ID       pgtype.UUID `json:"id"`
+	Email    string      `json:"email"`
+	Password string      `json:"password"`
+	Name     string      `json:"name"`
+	Role     string      `json:"role"`
+}
+
 const cancelReservation = `-- name: CancelReservation :one
 UPDATE reservation
 SET

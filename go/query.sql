@@ -1,3 +1,7 @@
+-- name: BulkInsertUser :copyfrom
+INSERT INTO "user" (id, email, password, name, role)
+VALUES ($1, $2, $3, $4, $5);
+
 -- name: InsertUser :one
 INSERT INTO "user" (id, email, password, name, role)
 VALUES ($1, $2, $3, $4, $5)
@@ -32,6 +36,10 @@ WHERE
   AND user_id = $2
 RETURNING *;
 
+-- name: BulkInsertMeetingRoom :copyfrom
+INSERT INTO meeting_room (id, name)
+VALUES ($1, $2);
+
 -- name: SelectMeetingRooms :many
 SELECT
   mr.*,
@@ -62,6 +70,10 @@ WHERE
 ORDER BY
   mr.name;
 
+-- name: BulkInsertReservation :copyfrom
+INSERT INTO reservation (id, user_id, meeting_room_id, time_slot_id, canceled, canceled_at)
+VALUES ($1, $2, $3, $4, $5, $6);
+
 -- name: SelectReservations :many
 SELECT
   r.*,
@@ -84,3 +96,7 @@ SET
 WHERE
   id = $1
 RETURNING *;
+
+-- name: BulkInsertTimeSlot :copyfrom
+INSERT INTO time_slot (id, meeting_room_id, start_date, end_date)
+VALUES ($1, $2, $3, $4);
