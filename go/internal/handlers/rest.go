@@ -51,6 +51,7 @@ func NewRestHandler(configs configs.Configs, customMiddleware MiddlewareHandler)
 		r.Get("/meeting-rooms/available", meetingRoomHandler.GetAvailableMeetingRooms)
 
 		reservationHandler := NewReservationHandler(configs)
+		r.Get("/reservations", reservationHandler.GetReservations)
 		r.Patch("/reservations/{reservationId}", reservationHandler.CancelReservation)
 	})
 

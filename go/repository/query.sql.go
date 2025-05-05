@@ -203,6 +203,77 @@ func (q *Queries) SelectMeetingRooms(ctx context.Context) ([]SelectMeetingRoomsR
 	return items, nil
 }
 
+const selectReservations = `-- name: SelectReservations :many
+SELECT
+  r.id, r.user_id, r.meeting_room_id, r.time_slot_id, r.canceled, r.canceled_at, r.reserved_at,
+  u.id, u.email, u.password, u.name, u.role, u.created_at,
+  mr.id, mr.name, mr.created_at,
+  ts.id, ts.meeting_room_id, ts.start_date, ts.end_date, ts.created_at
+FROM
+  reservation r
+JOIN
+  "user" u ON u.id = r.user_id
+JOIN
+  meeting_room mr ON mr.id = r.meeting_room_id
+JOIN
+  time_slot ts ON ts.id = r.time_slot_id
+`
+
+type SelectReservationsRow struct {
+	ID            pgtype.UUID        `json:"id"`
+	UserID        pgtype.UUID        `json:"user_id"`
+	MeetingRoomID pgtype.UUID        `json:"meeting_room_id"`
+	TimeSlotID    pgtype.UUID        `json:"time_slot_id"`
+	Canceled      bool               `json:"canceled"`
+	CanceledAt    pgtype.Timestamptz `json:"canceled_at"`
+	ReservedAt    pgtype.Timestamptz `json:"reserved_at"`
+	User          User               `json:"user"`
+	MeetingRoom   MeetingRoom        `json:"meeting_room"`
+	TimeSlot      TimeSlot           `json:"time_slot"`
+}
+
+func (q *Queries) SelectReservations(ctx context.Context) ([]SelectReservationsRow, error) {
+	rows, err := q.db.Query(ctx, selectReservations)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SelectReservationsRow
+	for rows.Next() {
+		var i SelectReservationsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.MeetingRoomID,
+			&i.TimeSlotID,
+			&i.Canceled,
+			&i.CanceledAt,
+			&i.ReservedAt,
+			&i.User.ID,
+			&i.User.Email,
+			&i.User.Password,
+			&i.User.Name,
+			&i.User.Role,
+			&i.User.CreatedAt,
+			&i.MeetingRoom.ID,
+			&i.MeetingRoom.Name,
+			&i.MeetingRoom.CreatedAt,
+			&i.TimeSlot.ID,
+			&i.TimeSlot.MeetingRoomID,
+			&i.TimeSlot.StartDate,
+			&i.TimeSlot.EndDate,
+			&i.TimeSlot.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const selectUser = `-- name: SelectUser :one
 SELECT id, email, password, name, role, created_at FROM "user" WHERE id = $1
 `

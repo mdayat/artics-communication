@@ -62,6 +62,21 @@ WHERE
 ORDER BY
   mr.name;
 
+-- name: SelectReservations :many
+SELECT
+  r.*,
+  sqlc.embed(u),
+  sqlc.embed(mr),
+  sqlc.embed(ts)
+FROM
+  reservation r
+JOIN
+  "user" u ON u.id = r.user_id
+JOIN
+  meeting_room mr ON mr.id = r.meeting_room_id
+JOIN
+  time_slot ts ON ts.id = r.time_slot_id;
+
 -- name: CancelReservation :one
 UPDATE reservation
 SET

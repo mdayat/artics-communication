@@ -9,3 +9,13 @@ type CanceledReservationResponse struct {
 	CanceledAt    *string `json:"canceled_at"`
 	ReservedAt    string  `json:"reserved_at"`
 }
+
+type ReservationResponse struct {
+	Id          string       `json:"id"`
+	User        UserResponse `json:"user"`
+	MeetingRoom MeetingRoom  `json:"meeting_room"`
+	TimeSlot    TimeSlot     `json:"time_slot"`
+	Canceled    bool         `json:"canceled"`
+	CanceledAt  *string      `json:"canceled_at"`
+	ReservedAt  string       `json:"reserved_at"`
+}
