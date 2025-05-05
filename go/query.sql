@@ -14,6 +14,9 @@ SELECT r.*, sqlc.embed(mr), sqlc.embed(ts) FROM reservation r
   JOIN time_slot ts ON ts.id = r.time_slot_id
 WHERE user_id = $1;
 
+-- name: SelectMeetingRooms :many
+SELECT * FROM meeting_room;
+
 -- name: SelectAvailableMeetingRooms :many
 SELECT * FROM meeting_room mr
 WHERE EXISTS (

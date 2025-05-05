@@ -80,6 +80,30 @@ func (q *Queries) SelectAvailableMeetingRooms(ctx context.Context) ([]MeetingRoo
 	return items, nil
 }
 
+const selectMeetingRooms = `-- name: SelectMeetingRooms :many
+SELECT id, name, created_at FROM meeting_room
+`
+
+func (q *Queries) SelectMeetingRooms(ctx context.Context) ([]MeetingRoom, error) {
+	rows, err := q.db.Query(ctx, selectMeetingRooms)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []MeetingRoom
+	for rows.Next() {
+		var i MeetingRoom
+		if err := rows.Scan(&i.ID, &i.Name, &i.CreatedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const selectUser = `-- name: SelectUser :one
 SELECT id, email, password, name, role, created_at FROM "user" WHERE id = $1
 `

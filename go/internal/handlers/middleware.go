@@ -52,6 +52,7 @@ type Authenticator interface {
 }
 
 type userIdKey struct{}
+type accountRoleKey struct{}
 
 type prodAuthenticator struct {
 	authService services.AuthServicer
@@ -87,7 +88,10 @@ func (p prodAuthenticator) Authenticate(next http.Handler) http.Handler {
 			return
 		}
 
-		req = req.WithContext(context.WithValue(req.Context(), userIdKey{}, claims.Subject))
+		ctxWithUserId := context.WithValue(req.Context(), userIdKey{}, claims.Subject)
+		ctxWithAccountRole := context.WithValue(ctxWithUserId, accountRoleKey{}, claims.Role)
+
+		req = req.WithContext(ctxWithAccountRole)
 		next.ServeHTTP(res, req)
 	})
 }
