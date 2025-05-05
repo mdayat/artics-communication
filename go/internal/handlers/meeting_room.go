@@ -76,7 +76,7 @@ func (mr meetingRoom) GetAvailableMeetingRooms(res http.ResponseWriter, req *htt
 	ctx := req.Context()
 	logger := log.Ctx(ctx).With().Logger()
 
-	availableMeetingRooms, err := retryutil.RetryWithData(func() ([]repository.MeetingRoom, error) {
+	availableMeetingRooms, err := retryutil.RetryWithData(func() ([]repository.SelectAvailableMeetingRoomsRow, error) {
 		return mr.configs.Db.Queries.SelectAvailableMeetingRooms(ctx)
 	})
 
@@ -86,13 +86,30 @@ func (mr meetingRoom) GetAvailableMeetingRooms(res http.ResponseWriter, req *htt
 		return
 	}
 
-	resBody := make([]dtos.MeetingRoom, 0, len(availableMeetingRooms))
+	resBody := make([]dtos.MeetingRoomWithTimeSlots, 0)
+	currentMeetingRoom := dtos.MeetingRoomWithTimeSlots{}
+
 	for _, meetingRoom := range availableMeetingRooms {
-		resBody = append(resBody, dtos.MeetingRoom{
+		if meetingRoom.Name == currentMeetingRoom.Name {
+			currentMeetingRoom.TimeSlots = append(currentMeetingRoom.TimeSlots, dtos.TimeSlot{
+				Id:        meetingRoom.TimeSlot.ID.String(),
+				StartDate: meetingRoom.TimeSlot.StartDate.Time.Format(time.RFC3339),
+				EndDate:   meetingRoom.TimeSlot.EndDate.Time.Format(time.RFC3339),
+				CreatedAt: meetingRoom.TimeSlot.CreatedAt.Time.Format(time.RFC3339),
+			})
+			continue
+		}
+
+		if currentMeetingRoom.Id != "" {
+			resBody = append(resBody, currentMeetingRoom)
+		}
+
+		currentMeetingRoom = dtos.MeetingRoomWithTimeSlots{
 			Id:        meetingRoom.ID.String(),
 			Name:      meetingRoom.Name,
 			CreatedAt: meetingRoom.CreatedAt.Time.Format(time.RFC3339),
-		})
+			TimeSlots: []dtos.TimeSlot{},
+		}
 	}
 
 	params := httputil.SendSuccessResponseParams{

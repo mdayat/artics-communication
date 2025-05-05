@@ -13,7 +13,8 @@ import (
 
 const insertUser = `-- name: InsertUser :one
 INSERT INTO "user" (id, email, password, name, role)
-VALUES ($1, $2, $3, $4, $5) RETURNING id, email, password, name, role, created_at
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, email, password, name, role, created_at
 `
 
 type InsertUserParams struct {
@@ -45,31 +46,51 @@ func (q *Queries) InsertUser(ctx context.Context, arg InsertUserParams) (User, e
 }
 
 const selectAvailableMeetingRooms = `-- name: SelectAvailableMeetingRooms :many
-SELECT id, name, created_at FROM meeting_room mr
-WHERE EXISTS (
-    SELECT 1
-    FROM time_slot ts
-    WHERE ts.meeting_room_id = mr.id
-    AND NOT EXISTS (
-        SELECT 1 
-        FROM reservation r 
-        WHERE r.meeting_room_id = mr.id 
-        AND r.time_slot_id = ts.id 
-        AND r.status != 'canceled'
-    )
-)
+SELECT
+  mr.id, mr.name, mr.created_at,
+  ts.id, ts.meeting_room_id, ts.start_date, ts.end_date, ts.created_at
+FROM
+  meeting_room mr
+JOIN
+  time_slot ts ON ts.meeting_room_id = mr.id
+WHERE
+  NOT EXISTS (
+    SELECT 1 FROM reservation r 
+    WHERE
+      r.meeting_room_id = mr.id 
+      AND r.time_slot_id = ts.id 
+      AND r.status != 'canceled'
+  )
+ORDER BY
+  mr.name
 `
 
-func (q *Queries) SelectAvailableMeetingRooms(ctx context.Context) ([]MeetingRoom, error) {
+type SelectAvailableMeetingRoomsRow struct {
+	ID        pgtype.UUID        `json:"id"`
+	Name      string             `json:"name"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	TimeSlot  TimeSlot           `json:"time_slot"`
+}
+
+func (q *Queries) SelectAvailableMeetingRooms(ctx context.Context) ([]SelectAvailableMeetingRoomsRow, error) {
 	rows, err := q.db.Query(ctx, selectAvailableMeetingRooms)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []MeetingRoom
+	var items []SelectAvailableMeetingRoomsRow
 	for rows.Next() {
-		var i MeetingRoom
-		if err := rows.Scan(&i.ID, &i.Name, &i.CreatedAt); err != nil {
+		var i SelectAvailableMeetingRoomsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.CreatedAt,
+			&i.TimeSlot.ID,
+			&i.TimeSlot.MeetingRoomID,
+			&i.TimeSlot.StartDate,
+			&i.TimeSlot.EndDate,
+			&i.TimeSlot.CreatedAt,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -141,10 +162,18 @@ func (q *Queries) SelectUserByEmail(ctx context.Context, email string) (User, er
 }
 
 const selectUserReservations = `-- name: SelectUserReservations :many
-SELECT r.id, r.user_id, r.meeting_room_id, r.time_slot_id, r.status, r.reserved_at, mr.id, mr.name, mr.created_at, ts.id, ts.meeting_room_id, ts.start_date, ts.end_date, ts.created_at FROM reservation r
-  JOIN meeting_room mr ON mr.id = r.meeting_room_id
-  JOIN time_slot ts ON ts.id = r.time_slot_id
-WHERE user_id = $1
+SELECT
+  r.id, r.user_id, r.meeting_room_id, r.time_slot_id, r.status, r.reserved_at,
+  mr.id, mr.name, mr.created_at,
+  ts.id, ts.meeting_room_id, ts.start_date, ts.end_date, ts.created_at
+FROM
+  reservation r
+JOIN
+  meeting_room mr ON mr.id = r.meeting_room_id
+JOIN
+  time_slot ts ON ts.id = r.time_slot_id
+WHERE
+  user_id = $1
 `
 
 type SelectUserReservationsRow struct {
