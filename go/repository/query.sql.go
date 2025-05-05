@@ -44,6 +44,42 @@ func (q *Queries) InsertUser(ctx context.Context, arg InsertUserParams) (User, e
 	return i, err
 }
 
+const selectAvailableMeetingRooms = `-- name: SelectAvailableMeetingRooms :many
+SELECT id, name, created_at FROM meeting_room mr
+WHERE EXISTS (
+    SELECT 1
+    FROM time_slot ts
+    WHERE ts.meeting_room_id = mr.id
+    AND NOT EXISTS (
+        SELECT 1 
+        FROM reservation r 
+        WHERE r.meeting_room_id = mr.id 
+        AND r.time_slot_id = ts.id 
+        AND r.status != 'canceled'
+    )
+)
+`
+
+func (q *Queries) SelectAvailableMeetingRooms(ctx context.Context) ([]MeetingRoom, error) {
+	rows, err := q.db.Query(ctx, selectAvailableMeetingRooms)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []MeetingRoom
+	for rows.Next() {
+		var i MeetingRoom
+		if err := rows.Scan(&i.ID, &i.Name, &i.CreatedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const selectUser = `-- name: SelectUser :one
 SELECT id, email, password, name, role, created_at FROM "user" WHERE id = $1
 `

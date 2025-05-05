@@ -44,6 +44,9 @@ func NewRestHandler(configs configs.Configs, customMiddleware MiddlewareHandler)
 		userHandler := NewUserHandler(configs)
 		r.Get("/users/me", userHandler.GetUser)
 		r.Get("/users/me/reservations", userHandler.GetReservations)
+
+		meetingRoomHandler := NewMeetingRoomHandler(configs)
+		r.Get("/meeting-rooms/available", meetingRoomHandler.GetAvailableMeetingRooms)
 	})
 
 	return router
