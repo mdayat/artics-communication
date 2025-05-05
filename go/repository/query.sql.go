@@ -79,3 +79,56 @@ func (q *Queries) SelectUserByEmail(ctx context.Context, email string) (User, er
 	)
 	return i, err
 }
+
+const selectUserReservations = `-- name: SelectUserReservations :many
+SELECT r.id, r.user_id, r.meeting_room_id, r.time_slot_id, r.status, r.reserved_at, mr.id, mr.name, mr.created_at, ts.id, ts.meeting_room_id, ts.start_date, ts.end_date, ts.created_at FROM reservation r
+  JOIN meeting_room mr ON mr.id = r.meeting_room_id
+  JOIN time_slot ts ON ts.id = r.time_slot_id
+WHERE user_id = $1
+`
+
+type SelectUserReservationsRow struct {
+	ID            pgtype.UUID        `json:"id"`
+	UserID        pgtype.UUID        `json:"user_id"`
+	MeetingRoomID pgtype.UUID        `json:"meeting_room_id"`
+	TimeSlotID    pgtype.UUID        `json:"time_slot_id"`
+	Status        string             `json:"status"`
+	ReservedAt    pgtype.Timestamptz `json:"reserved_at"`
+	MeetingRoom   MeetingRoom        `json:"meeting_room"`
+	TimeSlot      TimeSlot           `json:"time_slot"`
+}
+
+func (q *Queries) SelectUserReservations(ctx context.Context, userID pgtype.UUID) ([]SelectUserReservationsRow, error) {
+	rows, err := q.db.Query(ctx, selectUserReservations, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []SelectUserReservationsRow
+	for rows.Next() {
+		var i SelectUserReservationsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.UserID,
+			&i.MeetingRoomID,
+			&i.TimeSlotID,
+			&i.Status,
+			&i.ReservedAt,
+			&i.MeetingRoom.ID,
+			&i.MeetingRoom.Name,
+			&i.MeetingRoom.CreatedAt,
+			&i.TimeSlot.ID,
+			&i.TimeSlot.MeetingRoomID,
+			&i.TimeSlot.StartDate,
+			&i.TimeSlot.EndDate,
+			&i.TimeSlot.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

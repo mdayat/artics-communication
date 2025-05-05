@@ -57,3 +57,7 @@ CREATE TABLE reservation (
     ON UPDATE CASCADE
     ON DELETE CASCADE
 );
+
+CREATE UNIQUE INDEX idx_active_reservation
+ON reservation(meeting_room_id, time_slot_id) 
+WHERE status != 'canceled';

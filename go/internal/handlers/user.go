@@ -19,6 +19,7 @@ import (
 
 type UserHandler interface {
 	GetUser(res http.ResponseWriter, req *http.Request)
+	GetReservations(res http.ResponseWriter, req *http.Request)
 }
 
 type user struct {
@@ -76,4 +77,58 @@ func (u user) GetUser(res http.ResponseWriter, req *http.Request) {
 	}
 
 	logger.Info().Int("status_code", http.StatusOK).Msg("successfully get user")
+}
+
+func (u user) GetReservations(res http.ResponseWriter, req *http.Request) {
+	ctx := req.Context()
+	logger := log.Ctx(ctx).With().Logger()
+
+	userId := ctx.Value(userIdKey{}).(string)
+	reservations, err := retryutil.RetryWithData(func() ([]repository.SelectUserReservationsRow, error) {
+		userUUID, err := uuid.Parse(userId)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse user Id to UUID: %w", err)
+		}
+
+		return u.configs.Db.Queries.SelectUserReservations(ctx, pgtype.UUID{Bytes: userUUID, Valid: true})
+	})
+
+	if err != nil {
+		logger.Error().Err(err).Caller().Int("status_code", http.StatusInternalServerError).Msg("failed to select user reservations")
+		http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	resBody := make([]dtos.UserReservation, 0, len(reservations))
+	for _, reservation := range reservations {
+		resBody = append(resBody, dtos.UserReservation{
+			Id:         reservation.ID.String(),
+			Status:     reservation.Status,
+			ReservedAt: reservation.ReservedAt.Time.Format(time.RFC3339),
+			MeetingRoom: dtos.MeetingRoom{
+				Id:        reservation.MeetingRoom.ID.String(),
+				Name:      reservation.MeetingRoom.Name,
+				CreatedAt: reservation.MeetingRoom.CreatedAt.Time.Format(time.RFC3339),
+			},
+			TimeSlot: dtos.TimeSlot{
+				Id:        reservation.TimeSlot.ID.String(),
+				StartDate: reservation.TimeSlot.StartDate.Time.Format(time.RFC3339),
+				EndDate:   reservation.TimeSlot.EndDate.Time.Format(time.RFC3339),
+				CreatedAt: reservation.TimeSlot.CreatedAt.Time.Format(time.RFC3339),
+			},
+		})
+	}
+
+	params := httputil.SendSuccessResponseParams{
+		StatusCode: http.StatusOK,
+		ResBody:    resBody,
+	}
+
+	if err := httputil.SendSuccessResponse(res, params); err != nil {
+		logger.Error().Err(err).Caller().Int("status_code", http.StatusInternalServerError).Msg("failed to send success response")
+		http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	logger.Info().Int("status_code", http.StatusOK).Msg("successfully get user reservations")
 }
