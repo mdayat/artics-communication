@@ -21,7 +21,7 @@ import (
 type UserHandler interface {
 	GetUser(res http.ResponseWriter, req *http.Request)
 	GetUserReservations(res http.ResponseWriter, req *http.Request)
-	UpdateUserReservation(res http.ResponseWriter, req *http.Request)
+	CancelUserReservation(res http.ResponseWriter, req *http.Request)
 }
 
 type user struct {
@@ -103,9 +103,16 @@ func (u user) GetUserReservations(res http.ResponseWriter, req *http.Request) {
 
 	resBody := make([]dtos.UserReservationResponse, 0, len(reservations))
 	for _, reservation := range reservations {
+		var canceledAt *string
+		if reservation.CanceledAt.Valid {
+			formatted := reservation.CanceledAt.Time.Format(time.RFC3339)
+			canceledAt = &formatted
+		}
+
 		resBody = append(resBody, dtos.UserReservationResponse{
 			Id:         reservation.ID.String(),
-			Status:     reservation.Status,
+			Canceled:   reservation.Canceled,
+			CanceledAt: canceledAt,
 			ReservedAt: reservation.ReservedAt.Time.Format(time.RFC3339),
 			MeetingRoom: dtos.MeetingRoom{
 				Id:        reservation.MeetingRoom.ID.String(),
@@ -135,16 +142,9 @@ func (u user) GetUserReservations(res http.ResponseWriter, req *http.Request) {
 	logger.Info().Int("status_code", http.StatusOK).Msg("successfully get user reservations")
 }
 
-func (u user) UpdateUserReservation(res http.ResponseWriter, req *http.Request) {
+func (u user) CancelUserReservation(res http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	logger := log.Ctx(ctx).With().Logger()
-
-	var reqBody dtos.UpdateUserReservationRequest
-	if err := httputil.DecodeAndValidate(req, u.configs.Validate, &reqBody); err != nil {
-		logger.Error().Err(err).Caller().Int("status_code", http.StatusBadRequest).Msg("invalid request body")
-		http.Error(res, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-		return
-	}
 
 	reservationId := chi.URLParam(req, "reservationId")
 	userId := ctx.Value(userIdKey{}).(string)
@@ -160,10 +160,9 @@ func (u user) UpdateUserReservation(res http.ResponseWriter, req *http.Request) 
 			return repository.Reservation{}, fmt.Errorf("failed to parse user Id to UUID: %w", err)
 		}
 
-		return u.configs.Db.Queries.UpdateReservation(ctx, repository.UpdateReservationParams{
+		return u.configs.Db.Queries.CancelUserReservation(ctx, repository.CancelUserReservationParams{
 			ID:     pgtype.UUID{Bytes: reservationUUID, Valid: true},
 			UserID: pgtype.UUID{Bytes: userUUID, Valid: true},
-			Status: reqBody.Status,
 		})
 	})
 
@@ -172,16 +171,24 @@ func (u user) UpdateUserReservation(res http.ResponseWriter, req *http.Request) 
 			logger.Error().Err(err).Caller().Int("status_code", http.StatusNotFound).Msg("reservation not found")
 			http.Error(res, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 		} else {
-			logger.Error().Err(err).Caller().Int("status_code", http.StatusInternalServerError).Msg("failed to update user reservation")
+			logger.Error().Err(err).Caller().Int("status_code", http.StatusInternalServerError).Msg("failed to cancel user reservation")
 			http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 		}
 		return
 	}
 
-	resBody := dtos.UserReservationResponse{
-		Id:         reservation.ID.String(),
-		Status:     reservation.Status,
-		ReservedAt: reservation.ReservedAt.Time.Format(time.RFC3339),
+	resBody := dtos.CanceledReservationResponse{
+		Id:            reservation.ID.String(),
+		UserId:        reservation.UserID.String(),
+		MeetingRoomId: reservation.MeetingRoomID.String(),
+		TimeSlotId:    reservation.TimeSlotID.String(),
+		Canceled:      reservation.Canceled,
+		ReservedAt:    reservation.ReservedAt.Time.Format(time.RFC3339),
+	}
+
+	if reservation.CanceledAt.Valid {
+		formatted := reservation.CanceledAt.Time.Format(time.RFC3339)
+		resBody.CanceledAt = &formatted
 	}
 
 	params := httputil.SendSuccessResponseParams{
@@ -195,5 +202,5 @@ func (u user) UpdateUserReservation(res http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	logger.Info().Int("status_code", http.StatusOK).Msg("successfully updated user reservation")
+	logger.Info().Int("status_code", http.StatusOK).Msg("successfully canceled user reservation")
 }

@@ -39,7 +39,7 @@ func (mr meetingRoom) GetMeetingRooms(res http.ResponseWriter, req *http.Request
 		return
 	}
 
-	meetingRooms, err := retryutil.RetryWithData(func() ([]repository.MeetingRoom, error) {
+	meetingRooms, err := retryutil.RetryWithData(func() ([]repository.SelectMeetingRoomsRow, error) {
 		return mr.configs.Db.Queries.SelectMeetingRooms(ctx)
 	})
 
@@ -49,13 +49,30 @@ func (mr meetingRoom) GetMeetingRooms(res http.ResponseWriter, req *http.Request
 		return
 	}
 
-	resBody := make([]dtos.MeetingRoom, 0, len(meetingRooms))
+	resBody := make([]dtos.MeetingRoomWithTimeSlotsResponse, 0)
+	currentMeetingRoom := dtos.MeetingRoomWithTimeSlotsResponse{}
+
 	for _, meetingRoom := range meetingRooms {
-		resBody = append(resBody, dtos.MeetingRoom{
+		if meetingRoom.Name == currentMeetingRoom.Name {
+			currentMeetingRoom.TimeSlots = append(currentMeetingRoom.TimeSlots, dtos.TimeSlot{
+				Id:        meetingRoom.TimeSlot.ID.String(),
+				StartDate: meetingRoom.TimeSlot.StartDate.Time.Format(time.RFC3339),
+				EndDate:   meetingRoom.TimeSlot.EndDate.Time.Format(time.RFC3339),
+				CreatedAt: meetingRoom.TimeSlot.CreatedAt.Time.Format(time.RFC3339),
+			})
+			continue
+		}
+
+		if currentMeetingRoom.Id != "" {
+			resBody = append(resBody, currentMeetingRoom)
+		}
+
+		currentMeetingRoom = dtos.MeetingRoomWithTimeSlotsResponse{
 			Id:        meetingRoom.ID.String(),
 			Name:      meetingRoom.Name,
 			CreatedAt: meetingRoom.CreatedAt.Time.Format(time.RFC3339),
-		})
+			TimeSlots: []dtos.TimeSlot{},
+		}
 	}
 
 	params := httputil.SendSuccessResponseParams{
@@ -86,8 +103,8 @@ func (mr meetingRoom) GetAvailableMeetingRooms(res http.ResponseWriter, req *htt
 		return
 	}
 
-	resBody := make([]dtos.MeetingRoomWithTimeSlots, 0)
-	currentMeetingRoom := dtos.MeetingRoomWithTimeSlots{}
+	resBody := make([]dtos.MeetingRoomWithTimeSlotsResponse, 0)
+	currentMeetingRoom := dtos.MeetingRoomWithTimeSlotsResponse{}
 
 	for _, meetingRoom := range availableMeetingRooms {
 		if meetingRoom.Name == currentMeetingRoom.Name {
@@ -104,7 +121,7 @@ func (mr meetingRoom) GetAvailableMeetingRooms(res http.ResponseWriter, req *htt
 			resBody = append(resBody, currentMeetingRoom)
 		}
 
-		currentMeetingRoom = dtos.MeetingRoomWithTimeSlots{
+		currentMeetingRoom = dtos.MeetingRoomWithTimeSlotsResponse{
 			Id:        meetingRoom.ID.String(),
 			Name:      meetingRoom.Name,
 			CreatedAt: meetingRoom.CreatedAt.Time.Format(time.RFC3339),

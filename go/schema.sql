@@ -34,10 +34,9 @@ CREATE TABLE reservation (
   user_id UUID NOT NULL,
   meeting_room_id UUID NOT NULL,
   time_slot_id UUID NOT NULL,
-  status VARCHAR(50) NOT NULL DEFAULT 'in_progress' CHECK (status IN ('confirmed', 'canceled', 'in_progress', 'completed')),
+  canceled BOOLEAN DEFAULT FALSE NOT NULL,
+  canceled_at TIMESTAMPTZ NULL,
   reserved_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL,
-
-  UNIQUE (meeting_room_id, time_slot_id),
 
   CONSTRAINT fk_reservation_user_id
     FOREIGN KEY (user_id)
@@ -60,4 +59,4 @@ CREATE TABLE reservation (
 
 CREATE UNIQUE INDEX idx_active_reservation
 ON reservation(meeting_room_id, time_slot_id) 
-WHERE status != 'canceled';
+WHERE NOT canceled;

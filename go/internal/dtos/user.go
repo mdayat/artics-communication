@@ -17,10 +17,7 @@ type UserReservationResponse struct {
 	Id          string      `json:"id"`
 	MeetingRoom MeetingRoom `json:"meeting_room"`
 	TimeSlot    TimeSlot    `json:"time_slot"`
-	Status      string      `json:"status"`
+	Canceled    bool        `json:"canceled"`
+	CanceledAt  *string     `json:"canceled_at"`
 	ReservedAt  string      `json:"reserved_at"`
-}
-
-type UpdateUserReservationRequest struct {
-	Status string `json:"status" validate:"required,oneof=confirmed canceled in_progress completed"`
 }

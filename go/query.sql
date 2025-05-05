@@ -23,8 +23,25 @@ JOIN
 WHERE
   user_id = $1;
 
+-- name: CancelUserReservation :one
+UPDATE reservation
+SET
+  canceled = TRUE
+WHERE
+  id = $1
+  AND user_id = $2
+RETURNING *;
+
 -- name: SelectMeetingRooms :many
-SELECT * FROM meeting_room;
+SELECT
+  mr.*,
+  sqlc.embed(ts)
+FROM
+  meeting_room mr
+JOIN
+  time_slot ts ON ts.meeting_room_id = mr.id
+ORDER BY
+  mr.name;
 
 -- name: SelectAvailableMeetingRooms :many
 SELECT
@@ -40,16 +57,15 @@ WHERE
     WHERE
       r.meeting_room_id = mr.id 
       AND r.time_slot_id = ts.id 
-      AND r.status != 'canceled'
+      AND r.canceled == FALSE
   )
 ORDER BY
   mr.name;
 
--- name: UpdateReservation :one
+-- name: CancelReservation :one
 UPDATE reservation
 SET
-  status = $3
+  canceled = TRUE
 WHERE
   id = $1
-  AND user_id = $2
 RETURNING *;

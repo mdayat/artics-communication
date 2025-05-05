@@ -13,7 +13,7 @@ type TimeSlot struct {
 	CreatedAt string `json:"created_at"`
 }
 
-type MeetingRoomWithTimeSlots struct {
+type MeetingRoomWithTimeSlotsResponse struct {
 	Id        string `json:"id"`
 	Name      string `json:"name"`
 	CreatedAt string `json:"created_at"`

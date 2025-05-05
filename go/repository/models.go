@@ -19,7 +19,8 @@ type Reservation struct {
 	UserID        pgtype.UUID        `json:"user_id"`
 	MeetingRoomID pgtype.UUID        `json:"meeting_room_id"`
 	TimeSlotID    pgtype.UUID        `json:"time_slot_id"`
-	Status        string             `json:"status"`
+	Canceled      bool               `json:"canceled"`
+	CanceledAt    pgtype.Timestamptz `json:"canceled_at"`
 	ReservedAt    pgtype.Timestamptz `json:"reserved_at"`
 }
 

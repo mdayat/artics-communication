@@ -44,10 +44,14 @@ func NewRestHandler(configs configs.Configs, customMiddleware MiddlewareHandler)
 		userHandler := NewUserHandler(configs)
 		r.Get("/users/me", userHandler.GetUser)
 		r.Get("/users/me/reservations", userHandler.GetUserReservations)
-		r.Get("/users/me/reservations/{reservationId}", userHandler.UpdateUserReservation)
+		r.Patch("/users/me/reservations/{reservationId}", userHandler.CancelUserReservation)
 
 		meetingRoomHandler := NewMeetingRoomHandler(configs)
+		r.Get("/meeting-rooms", meetingRoomHandler.GetMeetingRooms)
 		r.Get("/meeting-rooms/available", meetingRoomHandler.GetAvailableMeetingRooms)
+
+		reservationHandler := NewReservationHandler(configs)
+		r.Patch("/reservations/{reservationId}", reservationHandler.CancelReservation)
 	})
 
 	return router

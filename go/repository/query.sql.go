@@ -11,6 +11,60 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const cancelReservation = `-- name: CancelReservation :one
+UPDATE reservation
+SET
+  canceled = TRUE
+WHERE
+  id = $1
+RETURNING id, user_id, meeting_room_id, time_slot_id, canceled, canceled_at, reserved_at
+`
+
+func (q *Queries) CancelReservation(ctx context.Context, id pgtype.UUID) (Reservation, error) {
+	row := q.db.QueryRow(ctx, cancelReservation, id)
+	var i Reservation
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.MeetingRoomID,
+		&i.TimeSlotID,
+		&i.Canceled,
+		&i.CanceledAt,
+		&i.ReservedAt,
+	)
+	return i, err
+}
+
+const cancelUserReservation = `-- name: CancelUserReservation :one
+UPDATE reservation
+SET
+  canceled = TRUE
+WHERE
+  id = $1
+  AND user_id = $2
+RETURNING id, user_id, meeting_room_id, time_slot_id, canceled, canceled_at, reserved_at
+`
+
+type CancelUserReservationParams struct {
+	ID     pgtype.UUID `json:"id"`
+	UserID pgtype.UUID `json:"user_id"`
+}
+
+func (q *Queries) CancelUserReservation(ctx context.Context, arg CancelUserReservationParams) (Reservation, error) {
+	row := q.db.QueryRow(ctx, cancelUserReservation, arg.ID, arg.UserID)
+	var i Reservation
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.MeetingRoomID,
+		&i.TimeSlotID,
+		&i.Canceled,
+		&i.CanceledAt,
+		&i.ReservedAt,
+	)
+	return i, err
+}
+
 const insertUser = `-- name: InsertUser :one
 INSERT INTO "user" (id, email, password, name, role)
 VALUES ($1, $2, $3, $4, $5)
@@ -59,7 +113,7 @@ WHERE
     WHERE
       r.meeting_room_id = mr.id 
       AND r.time_slot_id = ts.id 
-      AND r.status != 'canceled'
+      AND r.canceled == FALSE
   )
 ORDER BY
   mr.name
@@ -102,19 +156,43 @@ func (q *Queries) SelectAvailableMeetingRooms(ctx context.Context) ([]SelectAvai
 }
 
 const selectMeetingRooms = `-- name: SelectMeetingRooms :many
-SELECT id, name, created_at FROM meeting_room
+SELECT
+  mr.id, mr.name, mr.created_at,
+  ts.id, ts.meeting_room_id, ts.start_date, ts.end_date, ts.created_at
+FROM
+  meeting_room mr
+JOIN
+  time_slot ts ON ts.meeting_room_id = mr.id
+ORDER BY
+  mr.name
 `
 
-func (q *Queries) SelectMeetingRooms(ctx context.Context) ([]MeetingRoom, error) {
+type SelectMeetingRoomsRow struct {
+	ID        pgtype.UUID        `json:"id"`
+	Name      string             `json:"name"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	TimeSlot  TimeSlot           `json:"time_slot"`
+}
+
+func (q *Queries) SelectMeetingRooms(ctx context.Context) ([]SelectMeetingRoomsRow, error) {
 	rows, err := q.db.Query(ctx, selectMeetingRooms)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []MeetingRoom
+	var items []SelectMeetingRoomsRow
 	for rows.Next() {
-		var i MeetingRoom
-		if err := rows.Scan(&i.ID, &i.Name, &i.CreatedAt); err != nil {
+		var i SelectMeetingRoomsRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.CreatedAt,
+			&i.TimeSlot.ID,
+			&i.TimeSlot.MeetingRoomID,
+			&i.TimeSlot.StartDate,
+			&i.TimeSlot.EndDate,
+			&i.TimeSlot.CreatedAt,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -163,7 +241,7 @@ func (q *Queries) SelectUserByEmail(ctx context.Context, email string) (User, er
 
 const selectUserReservations = `-- name: SelectUserReservations :many
 SELECT
-  r.id, r.user_id, r.meeting_room_id, r.time_slot_id, r.status, r.reserved_at,
+  r.id, r.user_id, r.meeting_room_id, r.time_slot_id, r.canceled, r.canceled_at, r.reserved_at,
   mr.id, mr.name, mr.created_at,
   ts.id, ts.meeting_room_id, ts.start_date, ts.end_date, ts.created_at
 FROM
@@ -181,7 +259,8 @@ type SelectUserReservationsRow struct {
 	UserID        pgtype.UUID        `json:"user_id"`
 	MeetingRoomID pgtype.UUID        `json:"meeting_room_id"`
 	TimeSlotID    pgtype.UUID        `json:"time_slot_id"`
-	Status        string             `json:"status"`
+	Canceled      bool               `json:"canceled"`
+	CanceledAt    pgtype.Timestamptz `json:"canceled_at"`
 	ReservedAt    pgtype.Timestamptz `json:"reserved_at"`
 	MeetingRoom   MeetingRoom        `json:"meeting_room"`
 	TimeSlot      TimeSlot           `json:"time_slot"`
@@ -201,7 +280,8 @@ func (q *Queries) SelectUserReservations(ctx context.Context, userID pgtype.UUID
 			&i.UserID,
 			&i.MeetingRoomID,
 			&i.TimeSlotID,
-			&i.Status,
+			&i.Canceled,
+			&i.CanceledAt,
 			&i.ReservedAt,
 			&i.MeetingRoom.ID,
 			&i.MeetingRoom.Name,
@@ -220,34 +300,4 @@ func (q *Queries) SelectUserReservations(ctx context.Context, userID pgtype.UUID
 		return nil, err
 	}
 	return items, nil
-}
-
-const updateReservation = `-- name: UpdateReservation :one
-UPDATE reservation
-SET
-  status = $3
-WHERE
-  id = $1
-  AND user_id = $2
-RETURNING id, user_id, meeting_room_id, time_slot_id, status, reserved_at
-`
-
-type UpdateReservationParams struct {
-	ID     pgtype.UUID `json:"id"`
-	UserID pgtype.UUID `json:"user_id"`
-	Status string      `json:"status"`
-}
-
-func (q *Queries) UpdateReservation(ctx context.Context, arg UpdateReservationParams) (Reservation, error) {
-	row := q.db.QueryRow(ctx, updateReservation, arg.ID, arg.UserID, arg.Status)
-	var i Reservation
-	err := row.Scan(
-		&i.ID,
-		&i.UserID,
-		&i.MeetingRoomID,
-		&i.TimeSlotID,
-		&i.Status,
-		&i.ReservedAt,
-	)
-	return i, err
 }
