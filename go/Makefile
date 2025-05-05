@@ -11,10 +11,10 @@ vet: fmt
 	go vet ./...
 
 build: vet
-	go build -o app
+	go build -C cmd/web -o app
 
 run:
-	go run main.go
+	go run cmd/web/main.go
 
 seed:
 	docker compose up -d db
