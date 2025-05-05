@@ -43,7 +43,8 @@ func NewRestHandler(configs configs.Configs, customMiddleware MiddlewareHandler)
 
 		userHandler := NewUserHandler(configs)
 		r.Get("/users/me", userHandler.GetUser)
-		r.Get("/users/me/reservations", userHandler.GetReservations)
+		r.Get("/users/me/reservations", userHandler.GetUserReservations)
+		r.Get("/users/me/reservations/{reservationId}", userHandler.UpdateUserReservation)
 
 		meetingRoomHandler := NewMeetingRoomHandler(configs)
 		r.Get("/meeting-rooms/available", meetingRoomHandler.GetAvailableMeetingRooms)

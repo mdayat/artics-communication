@@ -44,3 +44,12 @@ WHERE
   )
 ORDER BY
   mr.name;
+
+-- name: UpdateReservation :one
+UPDATE reservation
+SET
+  status = $3
+WHERE
+  id = $1
+  AND user_id = $2
+RETURNING *;

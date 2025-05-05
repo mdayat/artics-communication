@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -19,7 +20,8 @@ import (
 
 type UserHandler interface {
 	GetUser(res http.ResponseWriter, req *http.Request)
-	GetReservations(res http.ResponseWriter, req *http.Request)
+	GetUserReservations(res http.ResponseWriter, req *http.Request)
+	UpdateUserReservation(res http.ResponseWriter, req *http.Request)
 }
 
 type user struct {
@@ -79,7 +81,7 @@ func (u user) GetUser(res http.ResponseWriter, req *http.Request) {
 	logger.Info().Int("status_code", http.StatusOK).Msg("successfully get user")
 }
 
-func (u user) GetReservations(res http.ResponseWriter, req *http.Request) {
+func (u user) GetUserReservations(res http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	logger := log.Ctx(ctx).With().Logger()
 
@@ -99,9 +101,9 @@ func (u user) GetReservations(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	resBody := make([]dtos.UserReservation, 0, len(reservations))
+	resBody := make([]dtos.UserReservationResponse, 0, len(reservations))
 	for _, reservation := range reservations {
-		resBody = append(resBody, dtos.UserReservation{
+		resBody = append(resBody, dtos.UserReservationResponse{
 			Id:         reservation.ID.String(),
 			Status:     reservation.Status,
 			ReservedAt: reservation.ReservedAt.Time.Format(time.RFC3339),
@@ -131,4 +133,67 @@ func (u user) GetReservations(res http.ResponseWriter, req *http.Request) {
 	}
 
 	logger.Info().Int("status_code", http.StatusOK).Msg("successfully get user reservations")
+}
+
+func (u user) UpdateUserReservation(res http.ResponseWriter, req *http.Request) {
+	ctx := req.Context()
+	logger := log.Ctx(ctx).With().Logger()
+
+	var reqBody dtos.UpdateUserReservationRequest
+	if err := httputil.DecodeAndValidate(req, u.configs.Validate, &reqBody); err != nil {
+		logger.Error().Err(err).Caller().Int("status_code", http.StatusBadRequest).Msg("invalid request body")
+		http.Error(res, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	reservationId := chi.URLParam(req, "reservationId")
+	userId := ctx.Value(userIdKey{}).(string)
+
+	reservation, err := retryutil.RetryWithData(func() (repository.Reservation, error) {
+		reservationUUID, err := uuid.Parse(reservationId)
+		if err != nil {
+			return repository.Reservation{}, fmt.Errorf("failed to parse reservation Id to UUID: %w", err)
+		}
+
+		userUUID, err := uuid.Parse(userId)
+		if err != nil {
+			return repository.Reservation{}, fmt.Errorf("failed to parse user Id to UUID: %w", err)
+		}
+
+		return u.configs.Db.Queries.UpdateReservation(ctx, repository.UpdateReservationParams{
+			ID:     pgtype.UUID{Bytes: reservationUUID, Valid: true},
+			UserID: pgtype.UUID{Bytes: userUUID, Valid: true},
+			Status: reqBody.Status,
+		})
+	})
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			logger.Error().Err(err).Caller().Int("status_code", http.StatusNotFound).Msg("reservation not found")
+			http.Error(res, http.StatusText(http.StatusNotFound), http.StatusNotFound)
+		} else {
+			logger.Error().Err(err).Caller().Int("status_code", http.StatusInternalServerError).Msg("failed to update user reservation")
+			http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	resBody := dtos.UserReservationResponse{
+		Id:         reservation.ID.String(),
+		Status:     reservation.Status,
+		ReservedAt: reservation.ReservedAt.Time.Format(time.RFC3339),
+	}
+
+	params := httputil.SendSuccessResponseParams{
+		StatusCode: http.StatusOK,
+		ResBody:    resBody,
+	}
+
+	if err := httputil.SendSuccessResponse(res, params); err != nil {
+		logger.Error().Err(err).Caller().Int("status_code", http.StatusInternalServerError).Msg("failed to send success response")
+		http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	logger.Info().Int("status_code", http.StatusOK).Msg("successfully updated user reservation")
 }

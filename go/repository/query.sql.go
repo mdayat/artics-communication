@@ -221,3 +221,33 @@ func (q *Queries) SelectUserReservations(ctx context.Context, userID pgtype.UUID
 	}
 	return items, nil
 }
+
+const updateReservation = `-- name: UpdateReservation :one
+UPDATE reservation
+SET
+  status = $3
+WHERE
+  id = $1
+  AND user_id = $2
+RETURNING id, user_id, meeting_room_id, time_slot_id, status, reserved_at
+`
+
+type UpdateReservationParams struct {
+	ID     pgtype.UUID `json:"id"`
+	UserID pgtype.UUID `json:"user_id"`
+	Status string      `json:"status"`
+}
+
+func (q *Queries) UpdateReservation(ctx context.Context, arg UpdateReservationParams) (Reservation, error) {
+	row := q.db.QueryRow(ctx, updateReservation, arg.ID, arg.UserID, arg.Status)
+	var i Reservation
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.MeetingRoomID,
+		&i.TimeSlotID,
+		&i.Status,
+		&i.ReservedAt,
+	)
+	return i, err
+}
