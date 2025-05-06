@@ -1,10 +1,12 @@
 import type { MeetingRoom, TimeSlot } from "./meetingRoom";
 
+type UserRole = "user" | "admin";
+
 interface UserResponse {
   id: string;
   email: string;
   name: string;
-  role: string;
+  role: UserRole;
   created_at: string;
 }
 

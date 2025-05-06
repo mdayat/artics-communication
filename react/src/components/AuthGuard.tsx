@@ -24,6 +24,12 @@ function AuthGuard() {
       (location.pathname === "/login" || location.pathname === "/registration")
     ) {
       navigate("/", { replace: true });
+    } else if (
+      user &&
+      user.role === "admin" &&
+      location.pathname === "/history"
+    ) {
+      navigate("/", { replace: true });
     }
   }, [isLoading, user, location, navigate]);
 

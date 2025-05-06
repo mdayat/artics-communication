@@ -44,11 +44,13 @@ function Layout({ children }: { children: React.ReactNode }) {
               <span className="text-sm font-medium">
                 {user?.name ?? "John Doe"}
               </span>
+
               <Avatar>
                 <AvatarImage
                   src="/placeholder-user.jpg"
                   alt={user?.name ?? "John Doe"}
                 />
+
                 <AvatarFallback>
                   {user?.name.split(" ").map((word) => word[0]) ?? "JD"}
                 </AvatarFallback>
@@ -68,6 +70,8 @@ interface SidebarProps {
 }
 
 function Sidebar({ setIsSidebarOpen }: SidebarProps) {
+  const { user } = useAuthContext();
+
   return (
     <div className="flex h-full w-64 flex-col bg-slate-800 text-white">
       <div className="flex h-16 items-center px-6">
@@ -85,14 +89,18 @@ function Sidebar({ setIsSidebarOpen }: SidebarProps) {
             <span>Home</span>
           </Link>
 
-          <Link
-            onClick={() => setIsSidebarOpen && setIsSidebarOpen(false)}
-            to="/history"
-            className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground"
-          >
-            <History className="h-4 w-4" />
-            <span>History</span>
-          </Link>
+          {user?.role === "user" ? (
+            <Link
+              onClick={() => setIsSidebarOpen && setIsSidebarOpen(false)}
+              to="/history"
+              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground"
+            >
+              <History className="h-4 w-4" />
+              <span>History</span>
+            </Link>
+          ) : (
+            <></>
+          )}
         </div>
       </nav>
 
