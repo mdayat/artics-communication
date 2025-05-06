@@ -28,11 +28,11 @@ import type {
 } from "@/dtos/reservation";
 import type { AxiosResponse } from "axios";
 
-interface MeetingRoomTableRowProps {
+interface RowProps {
   meetingRoom: MeetingRoomWithTimeSlotsResponse;
 }
 
-function MeetingRoomTableRow({ meetingRoom }: MeetingRoomTableRowProps) {
+function Row({ meetingRoom }: RowProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -161,4 +161,4 @@ function MeetingRoomTableRow({ meetingRoom }: MeetingRoomTableRowProps) {
   );
 }
 
-export { MeetingRoomTableRow };
+export { Row };

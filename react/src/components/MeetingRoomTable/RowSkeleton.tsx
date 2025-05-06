@@ -1,7 +1,7 @@
 import { Skeleton } from "../ui/Skeleton";
 import { TableCell, TableRow } from "../ui/Table";
 
-function MeetingRoomTableRowSkeleton() {
+function RowSkeleton() {
   return (
     <TableRow>
       <TableCell>
@@ -19,4 +19,4 @@ function MeetingRoomTableRowSkeleton() {
   );
 }
 
-export { MeetingRoomTableRowSkeleton };
+export { RowSkeleton };
