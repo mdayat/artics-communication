@@ -19,6 +19,8 @@ import { Input } from "@/components/ui/Input";
 import { Link, useNavigate } from "react-router";
 import { axiosInstance } from "@/lib/axios";
 import { toast } from "sonner";
+import type { RegisterRequest, UserResponse } from "@/dtos/user";
+import type { AxiosResponse } from "axios";
 
 const formSchema = z.object({
   username: z.string().min(2, {
@@ -48,7 +50,11 @@ function Registration() {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
     try {
-      const res = await axiosInstance.post("/auth/register", {
+      const res = await axiosInstance.post<
+        UserResponse,
+        AxiosResponse<UserResponse>,
+        RegisterRequest
+      >("/auth/register", {
         username: values.username,
         email: values.email,
         password: values.password,

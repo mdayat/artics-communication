@@ -1,6 +1,14 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 import { lazy, Suspense } from "react";
 import { Toaster } from "./components/ui/Sonner";
+import { AuthProvider } from "./contexts/AuthProvider";
+import { AuthGuard } from "./components/AuthGuard";
+
+const Home = lazy(() =>
+  import("./pages/home").then(({ Home }) => ({
+    default: Home,
+  }))
+);
 
 const Registration = lazy(() =>
   import("./pages/registration").then(({ Registration }) => ({
@@ -18,35 +26,46 @@ function App() {
   return (
     <BrowserRouter>
       <Toaster />
-      <Routes>
-        <Route
-        // element={
-        //   <Suspense fallback={<></>}>
-        //     <ProtectedRouteView />
-        //   </Suspense>
-        // }
-        >
+      <AuthProvider>
+        <Routes>
           <Route
-            path="/login"
             element={
               <Suspense fallback={<></>}>
-                <Login />
+                <AuthGuard />
               </Suspense>
             }
-          />
+          >
+            <Route
+              path="/"
+              element={
+                <Suspense fallback={<></>}>
+                  <Home />
+                </Suspense>
+              }
+            />
 
-          <Route
-            path="/registration"
-            element={
-              <Suspense fallback={<></>}>
-                <Registration />
-              </Suspense>
-            }
-          />
-        </Route>
+            <Route
+              path="/login"
+              element={
+                <Suspense fallback={<></>}>
+                  <Login />
+                </Suspense>
+              }
+            />
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+            <Route
+              path="/registration"
+              element={
+                <Suspense fallback={<></>}>
+                  <Registration />
+                </Suspense>
+              }
+            />
+          </Route>
+
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

@@ -19,6 +19,8 @@ import { Input } from "@/components/ui/Input";
 import { Link } from "react-router";
 import { axiosInstance } from "@/lib/axios";
 import { toast } from "sonner";
+import type { LoginRequest, UserResponse } from "@/dtos/user";
+import type { AxiosResponse } from "axios";
 
 const formSchema = z.object({
   email: z.string().email({
@@ -43,7 +45,11 @@ function Login() {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsLoading(true);
     try {
-      const res = await axiosInstance.post("/auth/login", {
+      const res = await axiosInstance.post<
+        UserResponse,
+        AxiosResponse<UserResponse>,
+        LoginRequest
+      >("/auth/login", {
         email: values.email,
         password: values.password,
       });
