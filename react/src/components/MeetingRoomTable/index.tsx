@@ -47,39 +47,35 @@ function MeetingRoomTable() {
   }, []);
 
   return (
-    <>
-      <h1 className="text-3xl font-bold mb-6">Available Meeting Rooms</h1>
+    <Card className="overflow-hidden py-0">
+      <CardContent className="p-0">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Name</TableHead>
+                <TableHead>Created At</TableHead>
+                <TableHead className="text-center">Action</TableHead>
+              </TableRow>
+            </TableHeader>
 
-      <Card className="overflow-hidden py-0">
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Created At</TableHead>
-                  <TableHead className="text-center">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-
-              <TableBody>
-                {isLoading ? (
-                  <>
-                    <MeetingRoomTableRowSkeleton />
-                    <MeetingRoomTableRowSkeleton />
-                    <MeetingRoomTableRowSkeleton />
-                  </>
-                ) : (
-                  meetingRooms.map((item) => (
-                    <MeetingRoomTableRow key={item.id} meetingRoom={item} />
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-    </>
+            <TableBody>
+              {isLoading ? (
+                <>
+                  <MeetingRoomTableRowSkeleton />
+                  <MeetingRoomTableRowSkeleton />
+                  <MeetingRoomTableRowSkeleton />
+                </>
+              ) : (
+                meetingRooms.map((item) => (
+                  <MeetingRoomTableRow key={item.id} meetingRoom={item} />
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

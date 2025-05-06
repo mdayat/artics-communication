@@ -10,6 +10,12 @@ const Home = lazy(() =>
   }))
 );
 
+const History = lazy(() =>
+  import("./pages/history").then(({ History }) => ({
+    default: History,
+  }))
+);
+
 const Registration = lazy(() =>
   import("./pages/registration").then(({ Registration }) => ({
     default: Registration,
@@ -40,6 +46,15 @@ function App() {
               element={
                 <Suspense fallback={<></>}>
                   <Home />
+                </Suspense>
+              }
+            />
+
+            <Route
+              path="/history"
+              element={
+                <Suspense fallback={<></>}>
+                  <History />
                 </Suspense>
               }
             />

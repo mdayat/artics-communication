@@ -2,9 +2,11 @@ import { MeetingRoomTable } from "@/components/MeetingRoomTable";
 
 function Home() {
   return (
-    <main className="max-w-5xl mx-auto">
+    <div className="space-y-4">
+      <h1 className="text-2xl font-bold">Available Meeting Rooms</h1>
+      <p>You can search the available meeting rooms and make a reservation.</p>
       <MeetingRoomTable />
-    </main>
+    </div>
   );
 }
 
