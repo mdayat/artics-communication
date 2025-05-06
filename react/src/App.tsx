@@ -8,6 +8,12 @@ const Registration = lazy(() =>
   }))
 );
 
+const Login = lazy(() =>
+  import("./pages/login").then(({ Login }) => ({
+    default: Login,
+  }))
+);
+
 function App() {
   return (
     <BrowserRouter>
@@ -24,7 +30,7 @@ function App() {
             path="/login"
             element={
               <Suspense fallback={<></>}>
-                <Registration />
+                <Login />
               </Suspense>
             }
           />
