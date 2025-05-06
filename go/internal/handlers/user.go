@@ -8,7 +8,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/mdayat/artics-communication/go/configs"
 	"github.com/mdayat/artics-communication/go/internal/dtos"
@@ -22,6 +24,7 @@ type UserHandler interface {
 	GetUser(res http.ResponseWriter, req *http.Request)
 	GetUserReservations(res http.ResponseWriter, req *http.Request)
 	CancelUserReservation(res http.ResponseWriter, req *http.Request)
+	CreateUserReservation(res http.ResponseWriter, req *http.Request)
 }
 
 type user struct {
@@ -177,7 +180,7 @@ func (u user) CancelUserReservation(res http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	resBody := dtos.CanceledReservationResponse{
+	resBody := dtos.ReservationResponse{
 		Id:            reservation.ID.String(),
 		UserId:        reservation.UserID.String(),
 		MeetingRoomId: reservation.MeetingRoomID.String(),
@@ -203,4 +206,80 @@ func (u user) CancelUserReservation(res http.ResponseWriter, req *http.Request) 
 	}
 
 	logger.Info().Int("status_code", http.StatusOK).Msg("successfully canceled user reservation")
+}
+
+func (u user) CreateUserReservation(res http.ResponseWriter, req *http.Request) {
+	ctx := req.Context()
+	logger := log.Ctx(ctx).With().Logger()
+
+	var reqBody dtos.CreateReservationRequest
+	if err := httputil.DecodeAndValidate(req, u.configs.Validate, &reqBody); err != nil {
+		logger.Error().Err(err).Caller().Int("status_code", http.StatusBadRequest).Msg("invalid request body")
+		http.Error(res, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
+		return
+	}
+
+	userId := ctx.Value(userIdKey{}).(string)
+	reservation, err := retryutil.RetryWithData(func() (repository.Reservation, error) {
+		userUUID, err := uuid.Parse(userId)
+		if err != nil {
+			return repository.Reservation{}, fmt.Errorf("failed to parse user Id to UUID: %w", err)
+		}
+
+		meetingRoomUUID, err := uuid.Parse(reqBody.MeetingRoomId)
+		if err != nil {
+			return repository.Reservation{}, fmt.Errorf("failed to parse meeting room Id to UUID: %w", err)
+		}
+
+		timeSlotUUID, err := uuid.Parse(reqBody.TimeSlotId)
+		if err != nil {
+			return repository.Reservation{}, fmt.Errorf("failed to parse time slot Id to UUID: %w", err)
+		}
+
+		return u.configs.Db.Queries.InsertReservation(ctx, repository.InsertReservationParams{
+			ID:            pgtype.UUID{Bytes: uuid.New(), Valid: true},
+			UserID:        pgtype.UUID{Bytes: userUUID, Valid: true},
+			MeetingRoomID: pgtype.UUID{Bytes: meetingRoomUUID, Valid: true},
+			TimeSlotID:    pgtype.UUID{Bytes: timeSlotUUID, Valid: true},
+		})
+	})
+
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+			logger.Error().Err(err).Caller().Int("status_code", http.StatusConflict).Msg("time slot already reserved")
+			http.Error(res, http.StatusText(http.StatusConflict), http.StatusConflict)
+		} else {
+			logger.Error().Err(err).Caller().Int("status_code", http.StatusInternalServerError).Msg("failed to create user reservation")
+			http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		}
+		return
+	}
+
+	resBody := dtos.ReservationResponse{
+		Id:            reservation.ID.String(),
+		UserId:        reservation.UserID.String(),
+		MeetingRoomId: reservation.MeetingRoomID.String(),
+		TimeSlotId:    reservation.TimeSlotID.String(),
+		Canceled:      reservation.Canceled,
+		ReservedAt:    reservation.ReservedAt.Time.Format(time.RFC3339),
+	}
+
+	if reservation.CanceledAt.Valid {
+		formatted := reservation.CanceledAt.Time.Format(time.RFC3339)
+		resBody.CanceledAt = &formatted
+	}
+
+	params := httputil.SendSuccessResponseParams{
+		StatusCode: http.StatusCreated,
+		ResBody:    resBody,
+	}
+
+	if err := httputil.SendSuccessResponse(res, params); err != nil {
+		logger.Error().Err(err).Caller().Int("status_code", http.StatusInternalServerError).Msg("failed to send success response")
+		http.Error(res, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+
+	logger.Info().Int("status_code", http.StatusCreated).Msg("successfully created user reservation")
 }

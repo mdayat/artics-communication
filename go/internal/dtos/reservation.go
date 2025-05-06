@@ -1,6 +1,11 @@
 package dtos
 
-type CanceledReservationResponse struct {
+type CreateReservationRequest struct {
+	MeetingRoomId string `json:"meeting_room_id"`
+	TimeSlotId    string `json:"time_slot_id"`
+}
+
+type ReservationResponse struct {
 	Id            string  `json:"id"`
 	UserId        string  `json:"user_id"`
 	MeetingRoomId string  `json:"meeting_room_id"`
@@ -10,7 +15,7 @@ type CanceledReservationResponse struct {
 	ReservedAt    string  `json:"reserved_at"`
 }
 
-type ReservationResponse struct {
+type EnrichedReservationResponse struct {
 	Id          string       `json:"id"`
 	User        UserResponse `json:"user"`
 	MeetingRoom MeetingRoom  `json:"meeting_room"`

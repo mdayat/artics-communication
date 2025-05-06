@@ -94,6 +94,39 @@ func (q *Queries) CancelUserReservation(ctx context.Context, arg CancelUserReser
 	return i, err
 }
 
+const insertReservation = `-- name: InsertReservation :one
+INSERT INTO reservation (id, user_id, meeting_room_id, time_slot_id)
+VALUES ($1, $2, $3, $4)
+RETURNING id, user_id, meeting_room_id, time_slot_id, canceled, canceled_at, reserved_at
+`
+
+type InsertReservationParams struct {
+	ID            pgtype.UUID `json:"id"`
+	UserID        pgtype.UUID `json:"user_id"`
+	MeetingRoomID pgtype.UUID `json:"meeting_room_id"`
+	TimeSlotID    pgtype.UUID `json:"time_slot_id"`
+}
+
+func (q *Queries) InsertReservation(ctx context.Context, arg InsertReservationParams) (Reservation, error) {
+	row := q.db.QueryRow(ctx, insertReservation,
+		arg.ID,
+		arg.UserID,
+		arg.MeetingRoomID,
+		arg.TimeSlotID,
+	)
+	var i Reservation
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.MeetingRoomID,
+		&i.TimeSlotID,
+		&i.Canceled,
+		&i.CanceledAt,
+		&i.ReservedAt,
+	)
+	return i, err
+}
+
 const insertUser = `-- name: InsertUser :one
 INSERT INTO "user" (id, email, password, name, role)
 VALUES ($1, $2, $3, $4, $5)

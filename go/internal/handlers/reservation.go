@@ -65,7 +65,7 @@ func (r reservation) CancelReservation(res http.ResponseWriter, req *http.Reques
 		return
 	}
 
-	resBody := dtos.CanceledReservationResponse{
+	resBody := dtos.ReservationResponse{
 		Id:            reservation.ID.String(),
 		UserId:        reservation.UserID.String(),
 		MeetingRoomId: reservation.MeetingRoomID.String(),
@@ -114,7 +114,7 @@ func (r reservation) GetReservations(res http.ResponseWriter, req *http.Request)
 		return
 	}
 
-	resBody := make([]dtos.ReservationResponse, 0, len(reservations))
+	resBody := make([]dtos.EnrichedReservationResponse, 0, len(reservations))
 	for _, reservation := range reservations {
 		var canceledAt *string
 		if reservation.CanceledAt.Valid {
@@ -122,7 +122,7 @@ func (r reservation) GetReservations(res http.ResponseWriter, req *http.Request)
 			canceledAt = &formatted
 		}
 
-		resBody = append(resBody, dtos.ReservationResponse{
+		resBody = append(resBody, dtos.EnrichedReservationResponse{
 			Id:         reservation.ID.String(),
 			Canceled:   reservation.Canceled,
 			CanceledAt: canceledAt,

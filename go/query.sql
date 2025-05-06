@@ -74,6 +74,11 @@ ORDER BY
 INSERT INTO reservation (id, user_id, meeting_room_id, time_slot_id, canceled, canceled_at)
 VALUES ($1, $2, $3, $4, $5, $6);
 
+-- name: InsertReservation :one
+INSERT INTO reservation (id, user_id, meeting_room_id, time_slot_id)
+VALUES ($1, $2, $3, $4)
+RETURNING *;
+
 -- name: SelectReservations :many
 SELECT
   r.*,

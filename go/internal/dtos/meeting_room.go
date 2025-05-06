@@ -14,8 +14,8 @@ type TimeSlot struct {
 }
 
 type MeetingRoomWithTimeSlotsResponse struct {
-	Id        string `json:"id"`
-	Name      string `json:"name"`
-	CreatedAt string `json:"created_at"`
-	TimeSlots []TimeSlot
+	Id        string     `json:"id"`
+	Name      string     `json:"name"`
+	CreatedAt string     `json:"created_at"`
+	TimeSlots []TimeSlot `json:"time_slots"`
 }
