@@ -142,6 +142,7 @@ func (a auth) Login(res http.ResponseWriter, req *http.Request) {
 		SameSite: http.SameSiteNoneMode,
 		HttpOnly: true,
 		Secure:   true,
+		Path:     "/",
 	})
 
 	resBody := dtos.UserResponse{
@@ -178,6 +179,7 @@ func (a auth) Logout(res http.ResponseWriter, req *http.Request) {
 		SameSite: http.SameSiteNoneMode,
 		HttpOnly: true,
 		Secure:   true,
+		Path:     "/",
 	})
 
 	res.WriteHeader(http.StatusNoContent)

@@ -175,7 +175,7 @@ WHERE
     WHERE
       r.meeting_room_id = mr.id 
       AND r.time_slot_id = ts.id 
-      AND r.canceled == FALSE
+      AND r.canceled = FALSE
   )
 ORDER BY
   mr.name

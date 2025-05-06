@@ -53,28 +53,32 @@ func (mr meetingRoom) GetMeetingRooms(res http.ResponseWriter, req *http.Request
 	currentMeetingRoom := dtos.MeetingRoomWithTimeSlotsResponse{}
 
 	for _, meetingRoom := range meetingRooms {
-		if meetingRoom.Name == currentMeetingRoom.Name {
-			currentMeetingRoom.TimeSlots = append(currentMeetingRoom.TimeSlots, dtos.TimeSlot{
-				Id:        meetingRoom.TimeSlot.ID.String(),
-				StartDate: meetingRoom.TimeSlot.StartDate.Time.Format(time.RFC3339),
-				EndDate:   meetingRoom.TimeSlot.EndDate.Time.Format(time.RFC3339),
-				CreatedAt: meetingRoom.TimeSlot.CreatedAt.Time.Format(time.RFC3339),
-			})
-			continue
-		}
-
-		if currentMeetingRoom.Id != "" {
+		if currentMeetingRoom.Id == "" {
+			currentMeetingRoom = dtos.MeetingRoomWithTimeSlotsResponse{
+				Id:        meetingRoom.ID.String(),
+				Name:      meetingRoom.Name,
+				CreatedAt: meetingRoom.CreatedAt.Time.Format(time.RFC3339),
+				TimeSlots: make([]dtos.TimeSlot, 0),
+			}
+		} else if meetingRoom.Name != currentMeetingRoom.Name {
 			resBody = append(resBody, currentMeetingRoom)
+			currentMeetingRoom = dtos.MeetingRoomWithTimeSlotsResponse{
+				Id:        meetingRoom.ID.String(),
+				Name:      meetingRoom.Name,
+				CreatedAt: meetingRoom.CreatedAt.Time.Format(time.RFC3339),
+				TimeSlots: make([]dtos.TimeSlot, 0),
+			}
 		}
 
-		currentMeetingRoom = dtos.MeetingRoomWithTimeSlotsResponse{
-			Id:        meetingRoom.ID.String(),
-			Name:      meetingRoom.Name,
-			CreatedAt: meetingRoom.CreatedAt.Time.Format(time.RFC3339),
-			TimeSlots: []dtos.TimeSlot{},
-		}
+		currentMeetingRoom.TimeSlots = append(currentMeetingRoom.TimeSlots, dtos.TimeSlot{
+			Id:        meetingRoom.TimeSlot.ID.String(),
+			StartDate: meetingRoom.TimeSlot.StartDate.Time.Format(time.RFC3339),
+			EndDate:   meetingRoom.TimeSlot.EndDate.Time.Format(time.RFC3339),
+			CreatedAt: meetingRoom.TimeSlot.CreatedAt.Time.Format(time.RFC3339),
+		})
 	}
 
+	resBody = append(resBody, currentMeetingRoom)
 	params := httputil.SendSuccessResponseParams{
 		StatusCode: http.StatusOK,
 		ResBody:    resBody,
@@ -107,28 +111,32 @@ func (mr meetingRoom) GetAvailableMeetingRooms(res http.ResponseWriter, req *htt
 	currentMeetingRoom := dtos.MeetingRoomWithTimeSlotsResponse{}
 
 	for _, meetingRoom := range availableMeetingRooms {
-		if meetingRoom.Name == currentMeetingRoom.Name {
-			currentMeetingRoom.TimeSlots = append(currentMeetingRoom.TimeSlots, dtos.TimeSlot{
-				Id:        meetingRoom.TimeSlot.ID.String(),
-				StartDate: meetingRoom.TimeSlot.StartDate.Time.Format(time.RFC3339),
-				EndDate:   meetingRoom.TimeSlot.EndDate.Time.Format(time.RFC3339),
-				CreatedAt: meetingRoom.TimeSlot.CreatedAt.Time.Format(time.RFC3339),
-			})
-			continue
-		}
-
-		if currentMeetingRoom.Id != "" {
+		if currentMeetingRoom.Id == "" {
+			currentMeetingRoom = dtos.MeetingRoomWithTimeSlotsResponse{
+				Id:        meetingRoom.ID.String(),
+				Name:      meetingRoom.Name,
+				CreatedAt: meetingRoom.CreatedAt.Time.Format(time.RFC3339),
+				TimeSlots: make([]dtos.TimeSlot, 0),
+			}
+		} else if meetingRoom.Name != currentMeetingRoom.Name {
 			resBody = append(resBody, currentMeetingRoom)
+			currentMeetingRoom = dtos.MeetingRoomWithTimeSlotsResponse{
+				Id:        meetingRoom.ID.String(),
+				Name:      meetingRoom.Name,
+				CreatedAt: meetingRoom.CreatedAt.Time.Format(time.RFC3339),
+				TimeSlots: make([]dtos.TimeSlot, 0),
+			}
 		}
 
-		currentMeetingRoom = dtos.MeetingRoomWithTimeSlotsResponse{
-			Id:        meetingRoom.ID.String(),
-			Name:      meetingRoom.Name,
-			CreatedAt: meetingRoom.CreatedAt.Time.Format(time.RFC3339),
-			TimeSlots: []dtos.TimeSlot{},
-		}
+		currentMeetingRoom.TimeSlots = append(currentMeetingRoom.TimeSlots, dtos.TimeSlot{
+			Id:        meetingRoom.TimeSlot.ID.String(),
+			StartDate: meetingRoom.TimeSlot.StartDate.Time.Format(time.RFC3339),
+			EndDate:   meetingRoom.TimeSlot.EndDate.Time.Format(time.RFC3339),
+			CreatedAt: meetingRoom.TimeSlot.CreatedAt.Time.Format(time.RFC3339),
+		})
 	}
 
+	resBody = append(resBody, currentMeetingRoom)
 	params := httputil.SendSuccessResponseParams{
 		StatusCode: http.StatusOK,
 		ResBody:    resBody,

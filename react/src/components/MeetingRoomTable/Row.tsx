@@ -27,6 +27,7 @@ import type {
   ReservationResponse,
 } from "@/dtos/reservation";
 import type { AxiosResponse } from "axios";
+import { Loader2 } from "lucide-react";
 
 interface RowProps {
   meetingRoom: MeetingRoomWithTimeSlotsResponse;
@@ -130,7 +131,14 @@ function Row({ meetingRoom }: RowProps) {
                           onClick={() => handleReserve(timeSlot.id)}
                           className="cursor-pointer"
                         >
-                          {isLoading ? "Reserving..." : "Continue"}
+                          {isLoading ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Reserving
+                            </>
+                          ) : (
+                            "Continue"
+                          )}
                         </Button>
                       </AlertDialogFooter>
                     </AlertDialogContent>

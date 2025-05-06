@@ -17,6 +17,7 @@ import type { ReservationResponse } from "@/dtos/reservation";
 import type { AxiosResponse } from "axios";
 import type { UserReservationResponse } from "@/dtos/user";
 import { Badge } from "../ui/Badge";
+import { Loader2 } from "lucide-react";
 
 interface RowProps {
   reservation: UserReservationResponse;
@@ -76,9 +77,9 @@ function Row({ reservation, setReservations }: RowProps) {
   return (
     <TableRow>
       <TableCell>{reservation.meeting_room.name}</TableCell>
-      <TableCell>
-        {formatDate(reservation.time_slot.start_date)} -{" "}
-        {formatDate(reservation.time_slot.end_date)}
+      <TableCell className="flex flex-col gap-1">
+        <span>{formatDate(reservation.time_slot.start_date)}</span>
+        <span>{formatDate(reservation.time_slot.end_date)}</span>
       </TableCell>
 
       <TableCell>
@@ -117,7 +118,14 @@ function Row({ reservation, setReservations }: RowProps) {
                 onClick={handleCancel}
                 className="cursor-pointer"
               >
-                {isLoading ? "Cancelling..." : "Continue"}
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Cancelling
+                  </>
+                ) : (
+                  "Continue"
+                )}
               </Button>
             </AlertDialogFooter>
           </AlertDialogContent>

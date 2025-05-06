@@ -1,15 +1,36 @@
 import type React from "react";
 import { useState, type Dispatch, type SetStateAction } from "react";
-import { Home, Menu, LogOut, History } from "lucide-react";
+import { Home, Menu, LogOut, History, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Sheet, SheetContent } from "@/components/ui/Sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/Avatar";
 import { Link } from "react-router";
 import { useAuthContext } from "@/contexts/AuthProvider";
+import { toast } from "sonner";
+import { axiosInstance } from "@/lib/axios";
 
 function Layout({ children }: { children: React.ReactNode }) {
+  const [isLoading, setIsLoading] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const { user } = useAuthContext();
+  const { user, setUser } = useAuthContext();
+
+  const handleLogout = async () => {
+    setIsLoading(true);
+    try {
+      const res = await axiosInstance.post("/auth/logout");
+      if (res.status === 204) {
+        toast.success("Logout successful", { richColors: true });
+        setUser(null);
+      } else {
+        throw new Error(`unknown status code: ${res.status}`);
+      }
+    } catch (error) {
+      console.error(new Error("failed to logout", { cause: error }));
+      toast.error("Logout failed, please try again", { richColors: true });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -19,12 +40,16 @@ function Layout({ children }: { children: React.ReactNode }) {
           className="p-0 bg-slate-800 text-white border-r-0 w-fit"
           onCloseAutoFocus={(event) => event.preventDefault()}
         >
-          <Sidebar setIsSidebarOpen={setIsSidebarOpen} />
+          <Sidebar
+            isLoading={isLoading}
+            handleLogout={handleLogout}
+            setIsSidebarOpen={setIsSidebarOpen}
+          />
         </SheetContent>
       </Sheet>
 
       <div className="hidden md:block">
-        <Sidebar />
+        <Sidebar isLoading={isLoading} handleLogout={handleLogout} />
       </div>
 
       <div className="flex flex-col flex-1">
@@ -66,10 +91,12 @@ function Layout({ children }: { children: React.ReactNode }) {
 }
 
 interface SidebarProps {
+  isLoading: boolean;
+  handleLogout: () => void;
   setIsSidebarOpen?: Dispatch<SetStateAction<boolean>>;
 }
 
-function Sidebar({ setIsSidebarOpen }: SidebarProps) {
+function Sidebar({ isLoading, handleLogout, setIsSidebarOpen }: SidebarProps) {
   const { user } = useAuthContext();
 
   return (
@@ -106,11 +133,22 @@ function Sidebar({ setIsSidebarOpen }: SidebarProps) {
 
       <div className="p-3">
         <Button
+          disabled={isLoading}
+          onClick={handleLogout}
           variant="ghost"
           className="cursor-pointer w-full justify-start text-sm font-medium"
         >
-          <LogOut className="mr-2 h-4 w-4" />
-          Logout
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Ending Session
+            </>
+          ) : (
+            <>
+              <LogOut className="mr-2 h-4 w-4" />
+              Logout
+            </>
+          )}
         </Button>
       </div>
     </div>

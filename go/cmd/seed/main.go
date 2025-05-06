@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/alexedwards/argon2id"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/mdayat/artics-communication/go/configs"
@@ -39,20 +40,32 @@ func main() {
 	configs := configs.NewConfigs(env, db)
 	err = dbutil.RetryableTxWithoutData(ctx, configs.Db.Conn, configs.Db.Queries, func(qtx *repository.Queries) error {
 		// Seed "user" table
+		hashedPassword, err := argon2id.CreateHash("password", argon2id.DefaultParams)
+		if err != nil {
+			return fmt.Errorf("failed to hash password: %w", err)
+		}
+
 		users := []repository.BulkInsertUserParams{
 			{
 				ID:       pgtype.UUID{Bytes: uuid.New(), Valid: true},
 				Email:    "john@gmail.com",
 				Name:     "John",
-				Password: "John",
+				Password: hashedPassword,
 				Role:     dtos.UserRole,
 			},
 			{
 				ID:       pgtype.UUID{Bytes: uuid.New(), Valid: true},
 				Email:    "anne@gmail.com",
 				Name:     "Anne",
-				Password: "Anne",
+				Password: hashedPassword,
 				Role:     dtos.UserRole,
+			},
+			{
+				ID:       pgtype.UUID{Bytes: uuid.New(), Valid: true},
+				Email:    "admin@gmail.com",
+				Name:     "Admin",
+				Password: hashedPassword,
+				Role:     dtos.AdminRole,
 			},
 		}
 

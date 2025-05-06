@@ -33,9 +33,7 @@ function AuthProvider({ children }: PropsWithChildren) {
         } else if (res.status === 401) {
           // not doing anything
         } else if (res.status === 404) {
-          toast.error("User not found", {
-            richColors: true,
-          });
+          toast.error("User not found", { richColors: true });
         } else {
           throw new Error(`unknown status code: ${res.status}`);
         }

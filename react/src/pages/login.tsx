@@ -9,7 +9,6 @@ import { Card, CardContent, CardFooter } from "@/components/ui/Card";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -21,6 +20,7 @@ import { axiosInstance } from "@/lib/axios";
 import { toast } from "sonner";
 import type { LoginRequest, UserResponse } from "@/dtos/user";
 import type { AxiosResponse } from "axios";
+import { useAuthContext } from "@/contexts/AuthProvider";
 
 const formSchema = z.object({
   email: z.string().email({
@@ -33,6 +33,7 @@ const formSchema = z.object({
 
 function Login() {
   const [isLoading, setIsLoading] = useState(false);
+  const { setUser } = useAuthContext();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -54,27 +55,21 @@ function Login() {
         password: values.password,
       });
 
-      if (res.status === 201) {
-        toast.success("Login success", {
-          richColors: true,
-        });
-        // TODO: set user data
+      if (res.status === 200) {
+        toast.success("Login success", { richColors: true });
+        setUser(res.data);
       } else if (res.status === 400) {
         toast.error("Please check your email and password again", {
           richColors: true,
         });
       } else if (res.status === 404) {
-        toast.error("User not found", {
-          richColors: true,
-        });
+        toast.error("User not found", { richColors: true });
       } else {
         throw new Error(`unknown status code: ${res.status}`);
       }
     } catch (error) {
       console.error(new Error("failed to login", { cause: error }));
-      toast.error("Login failed, please try again", {
-        richColors: true,
-      });
+      toast.error("Login failed, please try again", { richColors: true });
     } finally {
       setIsLoading(false);
     }
@@ -109,9 +104,6 @@ function Login() {
                           {...field}
                         />
                       </FormControl>
-                      <FormDescription>
-                        We'll never share your email with anyone else.
-                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -130,9 +122,6 @@ function Login() {
                           {...field}
                         />
                       </FormControl>
-                      <FormDescription>
-                        Must be at least 8 characters long.
-                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -142,7 +131,7 @@ function Login() {
                   {isLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Authenticating...
+                      Authenticating
                     </>
                   ) : (
                     "Login"

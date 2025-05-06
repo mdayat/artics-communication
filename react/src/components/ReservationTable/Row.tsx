@@ -19,6 +19,7 @@ import type {
 } from "@/dtos/reservation";
 import type { AxiosResponse } from "axios";
 import { Badge } from "../ui/Badge";
+import { Loader2 } from "lucide-react";
 
 interface RowProps {
   reservation: EnrichedReservationResponse;
@@ -81,9 +82,9 @@ function Row({ reservation, setReservations }: RowProps) {
     <TableRow>
       <TableCell>{reservation.user.name}</TableCell>
       <TableCell>{reservation.meeting_room.name}</TableCell>
-      <TableCell>
-        {formatDate(reservation.time_slot.start_date)} -{" "}
-        {formatDate(reservation.time_slot.end_date)}
+      <TableCell className="flex flex-col gap-1">
+        <span>{formatDate(reservation.time_slot.start_date)}</span>
+        <span>{formatDate(reservation.time_slot.end_date)}</span>
       </TableCell>
 
       <TableCell>
@@ -95,7 +96,12 @@ function Row({ reservation, setReservations }: RowProps) {
       <TableCell>{formatDate(reservation.reserved_at)}</TableCell>
 
       <TableCell className="text-center">
-        <Button onClick={() => setIsOpen(true)} className="cursor-pointer">
+        <Button
+          disabled={reservation.canceled}
+          onClick={() => setIsOpen(true)}
+          variant={reservation.canceled ? "outline" : "default"}
+          className="cursor-pointer"
+        >
           Cancel
         </Button>
 
@@ -124,7 +130,14 @@ function Row({ reservation, setReservations }: RowProps) {
                 onClick={handleCancel}
                 className="cursor-pointer"
               >
-                {isLoading ? "Cancelling..." : "Continue"}
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Cancelling
+                  </>
+                ) : (
+                  "Continue"
+                )}
               </Button>
             </AlertDialogFooter>
           </AlertDialogContent>
