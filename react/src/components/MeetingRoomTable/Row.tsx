@@ -49,6 +49,7 @@ function MeetingRoomTableRow({ meetingRoom }: MeetingRoomTableRowProps) {
       });
 
       if (res.status === 201) {
+        toast.success("Reservation successfully created", { richColors: true });
         setIsOpen(false);
       } else if (res.status === 409) {
         toast.error("Sorry, this time slot already reserved by someone else", {
@@ -125,6 +126,7 @@ function MeetingRoomTableRow({ meetingRoom }: MeetingRoomTableRowProps) {
                         </AlertDialogCancel>
 
                         <Button
+                          disabled={isLoading}
                           onClick={() => handleReserve(timeSlot.id)}
                           className="cursor-pointer"
                         >

@@ -1,3 +1,5 @@
+import type { MeetingRoom, TimeSlot } from "./meetingRoom";
+
 interface UserResponse {
   id: string;
   email: string;
@@ -17,4 +19,18 @@ interface LoginRequest {
   password: string;
 }
 
-export type { UserResponse, RegisterRequest, LoginRequest };
+interface UserReservationResponse {
+  id: string;
+  meeting_room: MeetingRoom;
+  time_slot: TimeSlot;
+  canceled: boolean;
+  canceled_at: string | null;
+  reserved_at: string;
+}
+
+export type {
+  UserResponse,
+  RegisterRequest,
+  LoginRequest,
+  UserReservationResponse,
+};
