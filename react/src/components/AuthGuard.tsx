@@ -33,11 +33,7 @@ function AuthGuard() {
     return <Outlet />;
   }
 
-  return (
-    <Layout>
-      <Outlet />
-    </Layout>
-  );
+  return <Layout />;
 }
 
 export { AuthGuard };

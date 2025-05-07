@@ -1,15 +1,14 @@
-import type React from "react";
 import { useState, type Dispatch, type SetStateAction } from "react";
 import { Home, Menu, LogOut, History, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Sheet, SheetContent } from "@/components/ui/Sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/Avatar";
-import { Link } from "react-router";
+import { Link, Outlet } from "react-router";
 import { useAuthContext } from "@/contexts/AuthProvider";
 import { toast } from "sonner";
 import { axiosInstance } from "@/lib/axios";
 
-function Layout({ children }: { children: React.ReactNode }) {
+function Layout() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { user, setUser } = useAuthContext();
@@ -84,7 +83,9 @@ function Layout({ children }: { children: React.ReactNode }) {
           </div>
         </header>
 
-        <main className="flex-1 p-6">{children}</main>
+        <main className="flex-1 p-6">
+          <Outlet />
+        </main>
       </div>
     </div>
   );
