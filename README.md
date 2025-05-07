@@ -65,4 +65,3 @@ The application follows a client-server architecture composed of the following c
 
 - **Infrastructure (Docker Compose)**  
   All services (frontend, backend, and database) are containerized and orchestrated using Docker Compose for easy local development.
-# artics-communication
