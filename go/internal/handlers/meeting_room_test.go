@@ -21,8 +21,8 @@ func TestMeetingRoomHandlers(t *testing.T) {
 			t.Fatalf("expected status %d, got %d", http.StatusOK, res.StatusCode)
 		}
 
-		var tasks []dtos.MeetingRoomWithTimeSlotsResponse
-		if err = json.NewDecoder(res.Body).Decode(&tasks); err != nil {
+		var meetingRooms []dtos.MeetingRoomWithTimeSlotsResponse
+		if err = json.NewDecoder(res.Body).Decode(&meetingRooms); err != nil {
 			t.Fatalf("unexpected response body: %v", res)
 		}
 	})
