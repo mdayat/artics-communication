@@ -21,9 +21,9 @@ seed:
 	@until docker exec db pg_isready -U postgres; do \
 		sleep 1; \
 	done
-	atlas migrate apply --env prod -u "postgres://postgres:password@localhost:5432/postgres?search_path=public&sslmode=disable" --revisions-schema public
-	go run cmd/seed/main.go
-
+	docker compose run --rm atlas migrate apply -u "postgres://postgres:password@db:5432/postgres?search_path=public&sslmode=disable" --revisions-schema public
+	docker compose run --rm seed
+	
 govulncheck:
 	govulncheck ./...
 
