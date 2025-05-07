@@ -23,6 +23,9 @@ seed:
 	done
 	docker compose run --rm atlas migrate apply -u "postgres://postgres:password@db:5432/postgres?search_path=public&sslmode=disable" --revisions-schema public
 	docker compose run --rm seed
+
+test: seed
+	docker compose run --rm test go test ./internal/handlers -v
 	
 govulncheck:
 	govulncheck ./...

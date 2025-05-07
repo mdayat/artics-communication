@@ -39,6 +39,12 @@ services:
       db:
         condition: service_healthy
 
+  test:
+    image: golang:1.23.8-alpine3.21
+    working_dir: /app
+    volumes:
+      - ./go:/app
+
   db:
     image: postgres
     container_name: db
