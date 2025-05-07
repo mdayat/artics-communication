@@ -13,9 +13,7 @@ import (
 )
 
 func TestAuthHandlers(t *testing.T) {
-	// ctx := context.TODO()
 	var createdUser dtos.UserResponse
-
 	registerTable := []struct {
 		name           string
 		reqBody        string
