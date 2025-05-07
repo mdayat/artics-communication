@@ -1,7 +1,7 @@
 import type { MeetingRoomWithTimeSlotsResponse } from "@/dtos/meetingRoom";
 import { TableCell, TableRow } from "../ui/Table";
 import { Button } from "../ui/Button";
-import { useState } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
 import {
   Dialog,
   DialogContent,
@@ -31,9 +31,10 @@ import { Loader2 } from "lucide-react";
 
 interface RowProps {
   meetingRoom: MeetingRoomWithTimeSlotsResponse;
+  setMeetingRooms: Dispatch<SetStateAction<MeetingRoomWithTimeSlotsResponse[]>>;
 }
 
-function Row({ meetingRoom }: RowProps) {
+function Row({ meetingRoom, setMeetingRooms }: RowProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -51,6 +52,23 @@ function Row({ meetingRoom }: RowProps) {
 
       if (res.status === 201) {
         toast.success("Reservation successfully created", { richColors: true });
+        setMeetingRooms((meetingRooms) =>
+          meetingRooms
+            .map((item) => {
+              if (item.id !== meetingRoom.id) {
+                return item;
+              }
+
+              return {
+                ...item,
+                time_slots: item.time_slots.filter(
+                  (timeSlot) => timeSlot.id !== timeSlotId
+                ),
+              };
+            })
+            .filter((item) => item.time_slots.length > 0)
+        );
+
         setIsOpen(false);
       } else if (res.status === 409) {
         toast.error("Sorry, this time slot already reserved by someone else", {

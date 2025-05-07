@@ -69,7 +69,11 @@ function MeetingRoomTable() {
               </>
             ) : (
               meetingRooms.map((item) => (
-                <Row key={item.id} meetingRoom={item} />
+                <Row
+                  key={item.id}
+                  meetingRoom={item}
+                  setMeetingRooms={setMeetingRooms}
+                />
               ))
             )}
           </TableBody>

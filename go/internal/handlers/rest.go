@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"net/http"
 	"strings"
 	"time"
 
@@ -23,7 +24,7 @@ func NewRestHandler(configs configs.Configs, customMiddleware MiddlewareHandler)
 
 	options := cors.Options{
 		AllowedOrigins:   strings.Split(configs.Env.AllowedOrigins, ","),
-		AllowedMethods:   []string{"GET", "PUT", "POST", "DELETE", "HEAD", "OPTIONS"},
+		AllowedMethods:   []string{http.MethodGet, http.MethodPut, http.MethodPatch, http.MethodPost, http.MethodDelete, http.MethodHead, http.MethodOptions},
 		AllowedHeaders:   []string{"User-Agent", "Content-Type", "Accept", "Accept-Encoding", "Accept-Language", "Cache-Control", "Connection", "Host", "Origin", "Referer", "Authorization"},
 		ExposedHeaders:   []string{"Content-Length", "Location"},
 		AllowCredentials: true,
