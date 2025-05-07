@@ -1,0 +1,397 @@
+openapi: 3.1.0
+info:
+  title: Artics Communication Test API Specs
+  version: 1.0.0-oas3.1
+tags:
+  - name: Auth
+  - name: User
+  - name: Reservation
+  - name: MeetingRoom
+servers:
+  - url: http://localhost:8080
+    description: Local development
+paths:
+  /auth/register:
+    post:
+      tags:
+        - Auth
+      summary: Register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        "400":
+          description: Invalid request body
+        "409":
+          description: Email already registered
+        "500":
+          description: Internal server error
+      security: []
+
+  /auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        "400":
+          description: Invalid request body
+        "404":
+          description: User not found
+        "500":
+          description: Internal server error
+      security: []
+
+  /auth/logout:
+    post:
+      tags:
+        - Auth
+      summary: Logout
+      responses:
+        "204":
+          description: Logout successful
+      security: []
+
+  /users/me:
+    get:
+      tags:
+        - User
+      summary: Get current user
+      responses:
+        "200":
+          description: User retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        "401":
+          description: Unauthorized
+        "404":
+          description: User not found
+        "500":
+          description: Internal server error
+
+  /users/me/reservations:
+    get:
+      tags:
+        - User
+      summary: Get user reservations
+      responses:
+        "200":
+          description: Reservations retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserReservationResponse"
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+    post:
+      tags:
+        - User
+      summary: Create reservation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateReservationRequest"
+      responses:
+        "201":
+          description: Reservation created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReservationResponse"
+        "400":
+          description: Bad request
+        "401":
+          description: Unauthorized
+        "409":
+          description: Conflict (already reserved by another user)
+        "500":
+          description: Internal server error
+
+  /users/me/reservations/{reservationId}:
+    patch:
+      tags:
+        - User
+      summary: Cancel reservation
+      parameters:
+        - in: path
+          name: reservationId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Reservation canceled successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReservationResponse"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Reservation not found
+        "500":
+          description: Internal server error
+
+  /reservations:
+    get:
+      tags:
+        - Reservation
+      summary: Get all reservations (admin only)
+      responses:
+        "200":
+          description: Reservations retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EnrichedReservationResponse"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden (admin only)
+        "500":
+          description: Internal server error
+
+  /reservations/{reservationId}:
+    patch:
+      tags:
+        - Reservation
+      summary: Cancel reservation (admin only)
+      parameters:
+        - in: path
+          name: reservationId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Reservation canceled successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReservationResponse"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden (admin only)
+        "404":
+          description: Reservation not found
+        "500":
+          description: Internal server error
+
+  /meeting-rooms/available:
+    get:
+      tags:
+        - MeetingRoom
+      summary: Get available meeting rooms with time slots
+      responses:
+        "200":
+          description: Meeting rooms retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MeetingRoomWithTimeSlotsResponse"
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal server error
+
+components:
+  schemas:
+    RegisterRequest:
+      type: object
+      required:
+        - username
+        - email
+        - password
+      properties:
+        username:
+          type: string
+          minLength: 2
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+          enum: [user, admin]
+        created_at:
+          type: string
+          format: date-time
+
+    CreateReservationRequest:
+      type: object
+      required:
+        - meeting_room_id
+        - time_slot_id
+      properties:
+        meeting_room_id:
+          type: string
+        time_slot_id:
+          type: string
+
+    UserReservationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        meeting_room:
+          $ref: "#/components/schemas/MeetingRoom"
+        time_slot:
+          $ref: "#/components/schemas/TimeSlot"
+        canceled:
+          type: boolean
+        canceled_at:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: "null"
+        reserved_at:
+          type: string
+          format: date-time
+
+    ReservationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        user_id:
+          type: string
+        meeting_room_id:
+          type: string
+        time_slot_id:
+          type: string
+        canceled:
+          type: boolean
+        canceled_at:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: "null"
+        reserved_at:
+          type: string
+          format: date-time
+
+    MeetingRoom:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+
+    TimeSlot:
+      type: object
+      properties:
+        id:
+          type: string
+        start_date:
+          type: string
+          format: date-time
+        end_date:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+
+    EnrichedReservationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        user:
+          $ref: "#/components/schemas/UserResponse"
+        meeting_room:
+          $ref: "#/components/schemas/MeetingRoom"
+        time_slot:
+          $ref: "#/components/schemas/TimeSlot"
+        canceled:
+          type: boolean
+        canceled_at:
+          anyOf:
+            - type: string
+              format: date-time
+            - type: "null"
+        reserved_at:
+          type: string
+          format: date-time
+
+    MeetingRoomWithTimeSlotsResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        time_slots:
+          type: array
+          items:
+            $ref: "#/components/schemas/TimeSlot"
+
+security:
+  - accessToken: []
