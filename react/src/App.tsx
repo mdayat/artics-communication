@@ -2,7 +2,18 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 import { lazy, Suspense } from "react";
 import { Toaster } from "./components/ui/Sonner";
 import { AuthProvider } from "./contexts/AuthProvider";
-import { AuthGuard } from "./components/AuthGuard";
+
+const AuthGuard = lazy(() =>
+  import("./components/AuthGuard").then(({ AuthGuard }) => ({
+    default: AuthGuard,
+  }))
+);
+
+const ErrorBoundary = lazy(() =>
+  import("./components/ErrorBoundary").then(({ ErrorBoundary }) => ({
+    default: ErrorBoundary,
+  }))
+);
 
 const Home = lazy(() =>
   import("./pages/home").then(({ Home }) => ({
@@ -38,6 +49,11 @@ function App() {
             element={
               <Suspense fallback={<></>}>
                 <AuthGuard />
+              </Suspense>
+            }
+            errorElement={
+              <Suspense fallback={<></>}>
+                <ErrorBoundary />
               </Suspense>
             }
           >
