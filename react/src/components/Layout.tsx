@@ -67,17 +67,17 @@ function Layout({ children }: { children: React.ReactNode }) {
           <div className="ml-auto flex items-center gap-4">
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium">
-                {user?.name ?? "John Doe"}
+                {user ? user.name : "John Doe"}
               </span>
 
               <Avatar>
                 <AvatarImage
                   src="/placeholder-user.jpg"
-                  alt={user?.name ?? "John Doe"}
+                  alt={user ? user.name : "John Doe"}
                 />
 
                 <AvatarFallback>
-                  {user?.name.split(" ").map((word) => word[0]) ?? "JD"}
+                  {user ? user.name.split(" ").map((word) => word[0]) : "JD"}
                 </AvatarFallback>
               </Avatar>
             </div>
@@ -116,7 +116,7 @@ function Sidebar({ isLoading, handleLogout, setIsSidebarOpen }: SidebarProps) {
             <span>Home</span>
           </Link>
 
-          {user?.role === "user" ? (
+          {user && user.role === "user" ? (
             <Link
               onClick={() => setIsSidebarOpen && setIsSidebarOpen(false)}
               to="/history"

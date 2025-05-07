@@ -7,6 +7,20 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  react:
+    build:
+      context: ./react
+    ports:
+      - "3000:3000"
+    depends_on:
+      go:
+        condition: service_healthy
 
   atlas:
     image: arigaio/atlas:latest

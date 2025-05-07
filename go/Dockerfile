@@ -18,6 +18,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o app ./cmd/web
 RUN CGO_ENABLED=0 GOOS=linux go build -o seed ./cmd/seed
 
 FROM base-alpine AS final
+RUN apk add --no-cache curl
 COPY --from=build /app/app .
 COPY --from=build /app/seed .
 COPY .env .

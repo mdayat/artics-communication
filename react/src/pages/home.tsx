@@ -7,7 +7,11 @@ function Home() {
 
   return (
     <div className="space-y-4 max-w-5xl mx-auto">
-      {user?.role === "user" ? <MeetingRoomTable /> : <ReservationTable />}
+      {user && user.role === "user" ? (
+        <MeetingRoomTable />
+      ) : (
+        <ReservationTable />
+      )}
     </div>
   );
 }
